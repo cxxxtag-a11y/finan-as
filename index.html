@@ -3,121 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão Financeira Semanal</title>
+    <title>Gestão Financeira Pro</title>
     
-    <!-- Tailwind CSS (Estilos Utilitários) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Ícones (Lucide) -->
     <script src="https://unpkg.com/lucide@latest"></script>
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; overflow-x: hidden; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
         
-        /* Transições de Tela */
+        /* Utilitários de Animação */
         .screen { display: none; opacity: 0; transition: opacity 0.3s ease; }
         .screen.active { display: block; opacity: 1; }
+        .fade-enter { animation: fadeIn 0.3s forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Animações */
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .animate-slide-up { animation: slideUp 0.4s ease-out forwards; }
+        /* Scrollbar suave */
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Loading */
-        #loader { display: flex; }
+        /* Accordion (Detalhes) */
+        .details-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .details-open { max-height: 500px; }
     </style>
 </head>
-<body class="text-slate-800">
+<body class="text-slate-800 bg-slate-50">
 
-    <!-- TELA DE LOADING -->
+    <!-- LOADING -->
     <div id="loader" class="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center transition-opacity duration-500">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-        <p class="text-slate-500 text-sm font-medium">Carregando suas finanças...</p>
+        <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-indigo-600 mb-4"></div>
+        <p class="text-slate-500 text-sm font-medium animate-pulse">Organizando suas finanças...</p>
     </div>
 
-    <!-- MAIN CONTAINER -->
-    <div class="max-w-md mx-auto min-h-screen bg-white shadow-2xl relative pb-20">
+    <!-- APP CONTAINER -->
+    <div class="max-w-md mx-auto min-h-screen bg-white shadow-2xl relative pb-24">
 
-        <!-- HEADER (Comum) -->
-        <header class="bg-blue-600 text-white pt-10 pb-20 px-6 rounded-b-[2.5rem] relative shadow-lg">
-            <div class="flex justify-between items-center mb-6">
+        <!-- HEADER PRINCIPAL -->
+        <header class="bg-indigo-600 text-white pt-10 pb-24 px-6 rounded-b-[3rem] relative shadow-lg overflow-hidden">
+            <!-- Efeito de fundo -->
+            <div class="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+                <div class="absolute right-0 top-0 w-64 h-64 bg-white rounded-full mix-blend-overlay filter blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
+            </div>
+
+            <div class="relative z-10 flex justify-between items-center mb-6">
                 <div>
-                    <h1 class="text-xs opacity-80 uppercase tracking-wide font-semibold">Controle Semanal</h1>
-                    <h2 class="text-2xl font-bold flex items-center gap-2">
-                        <i data-lucide="wallet"></i> Minhas Finanças
+                    <h1 class="text-xs text-indigo-200 uppercase tracking-widest font-bold">Gestão Pessoal</h1>
+                    <h2 class="text-xl font-bold flex items-center gap-2">
+                        Olá, Chefe <i data-lucide="crown" width="18" class="text-yellow-400"></i>
                     </h2>
                 </div>
-                <div class="bg-white/20 p-2 rounded-full backdrop-blur-sm">
-                    <i data-lucide="user" class="text-white"></i>
+                <!-- Total Guardado (Reserva) -->
+                <div class="bg-indigo-700/50 p-2 pr-4 rounded-xl backdrop-blur-md flex items-center gap-3 border border-indigo-500/30">
+                    <div class="bg-indigo-500 p-2 rounded-lg">
+                        <i data-lucide="piggy-bank" class="text-white" width="20"></i>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-indigo-200 uppercase font-bold block">Reserva</span>
+                        <span id="display-reserve" class="font-bold text-sm">R$ 0,00</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- CARD DE SALDO (Flutuante) -->
-            <div class="absolute left-6 right-6 -bottom-16 bg-white rounded-2xl shadow-xl p-6 text-center animate-slide-up">
-                <span class="text-slate-400 text-xs uppercase font-bold tracking-wider">Saldo desta Semana</span>
-                <div id="display-balance" class="text-4xl font-extrabold mt-2 text-slate-800">R$ 0,00</div>
+            <!-- CARD SALDO DISPONÍVEL (Flutuante) -->
+            <div class="absolute left-6 right-6 -bottom-16 bg-white rounded-3xl shadow-xl p-6 text-center fade-enter z-20">
+                <span class="text-slate-400 text-xs uppercase font-bold tracking-wider">Disponível na Semana</span>
+                <div id="display-balance" class="text-4xl font-extrabold mt-2 text-slate-800 tracking-tight">R$ 0,00</div>
                 
-                <div class="grid grid-cols-2 mt-6 pt-4 border-t border-slate-100">
-                    <div class="text-center">
+                <div class="grid grid-cols-2 mt-6 pt-4 border-t border-slate-100 divide-x divide-slate-100">
+                    <div class="px-2">
                         <div class="flex items-center justify-center gap-1 text-emerald-600 text-xs font-bold uppercase mb-1">
-                            <i data-lucide="arrow-up-circle" width="16"></i> Entrou
+                            <i data-lucide="arrow-up" width="14"></i> Receita
                         </div>
-                        <span id="display-income" class="font-bold text-slate-700">R$ 0,00</span>
+                        <span id="display-income" class="font-bold text-slate-700 text-sm">R$ 0,00</span>
                     </div>
-                    <div class="text-center border-l border-slate-100">
+                    <div class="px-2">
                         <div class="flex items-center justify-center gap-1 text-red-500 text-xs font-bold uppercase mb-1">
-                            <i data-lucide="arrow-down-circle" width="16"></i> Saiu
+                            <i data-lucide="arrow-down" width="14"></i> Despesa
                         </div>
-                        <span id="display-expense" class="font-bold text-slate-700">R$ 0,00</span>
+                        <span id="display-expense" class="font-bold text-slate-700 text-sm">R$ 0,00</span>
                     </div>
                 </div>
             </div>
         </header>
 
-        <!-- ESPAÇADOR DO CARD -->
-        <div class="h-24"></div>
+        <div class="h-20"></div>
 
-        <!-- CONTEÚDO DINÂMICO -->
-        <main class="px-6 relative">
+        <!-- CONTEÚDO -->
+        <main class="px-6 relative z-10">
             
             <!-- TELA 1: DASHBOARD -->
-            <div id="screen-dashboard" class="screen active animate-slide-up">
-                <!-- Botões de Ação -->
-                <div class="grid grid-cols-2 gap-4 mb-8">
-                    <button onclick="openAddScreen('income')" class="bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 p-4 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95">
-                        <div class="bg-emerald-500 text-white p-2 rounded-full shadow-sm">
-                            <i data-lucide="plus"></i>
+            <div id="screen-dashboard" class="screen active fade-enter">
+                
+                <!-- Ações Rápidas -->
+                <h3 class="font-bold text-slate-800 text-sm mb-3 mt-4">Ações Rápidas</h3>
+                <div class="grid grid-cols-3 gap-3 mb-8">
+                    <button onclick="openAddScreen('income')" class="bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 p-3 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95">
+                        <div class="bg-emerald-500 text-white p-2 rounded-xl shadow-sm">
+                            <i data-lucide="plus" width="20"></i>
                         </div>
-                        <span class="text-emerald-800 font-bold text-sm">Recebi</span>
+                        <span class="text-emerald-900 font-bold text-xs">Receber</span>
                     </button>
-                    <button onclick="openAddScreen('expense')" class="bg-red-50 border border-red-100 hover:bg-red-100 p-4 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95">
-                        <div class="bg-red-500 text-white p-2 rounded-full shadow-sm">
-                            <i data-lucide="minus"></i>
+                    
+                    <button onclick="openAddScreen('expense')" class="bg-red-50 hover:bg-red-100 border border-red-100 p-3 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95">
+                        <div class="bg-red-500 text-white p-2 rounded-xl shadow-sm">
+                            <i data-lucide="minus" width="20"></i>
                         </div>
-                        <span class="text-red-800 font-bold text-sm">Gastei</span>
+                        <span class="text-red-900 font-bold text-xs">Gastar</span>
+                    </button>
+
+                    <button onclick="openAddScreen('reserve')" class="bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 p-3 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95">
+                        <div class="bg-indigo-500 text-white p-2 rounded-xl shadow-sm">
+                            <i data-lucide="piggy-bank" width="20"></i>
+                        </div>
+                        <span class="text-indigo-900 font-bold text-xs">Guardar</span>
                     </button>
                 </div>
 
-                <!-- Lista de Transações -->
-                <div class="flex justify-between items-end mb-4">
-                    <h3 class="font-bold text-slate-700 text-lg">Essa Semana</h3>
-                    <button onclick="showScreen('screen-history')" class="text-blue-600 text-xs font-bold hover:underline cursor-pointer">
-                        Ver Fechamentos
-                    </button>
-                </div>
-
-                <div id="transaction-list" class="space-y-3 pb-4">
-                    <!-- Itens serão injetados aqui via JS -->
-                    <div class="text-center py-10 opacity-50">
-                        <p class="text-sm text-slate-500">Sem dados nesta semana.</p>
+                <!-- Alerta de Contas Fixas -->
+                <div id="fixed-alert-container" class="hidden mb-6">
+                    <div onclick="showScreen('screen-fixed')" class="bg-orange-50 border border-orange-100 rounded-2xl p-4 flex items-center justify-between cursor-pointer active:bg-orange-100">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-orange-100 p-2 rounded-full text-orange-500">
+                                <i data-lucide="calendar-clock" width="20"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold text-orange-900 text-sm">Contas Pendentes</p>
+                                <p class="text-xs text-orange-600">Toque para ver e pagar</p>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right" class="text-orange-300" width="20"></i>
                     </div>
                 </div>
+
+                <!-- Lista Recente -->
+                <div class="flex justify-between items-end mb-4">
+                    <h3 class="font-bold text-slate-700 text-lg">Essa Semana</h3>
+                    <button onclick="showScreen('screen-history')" class="text-indigo-600 text-xs font-bold hover:underline">
+                        Ver Relatório Completo
+                    </button>
+                </div>
+
+                <div id="transaction-list" class="space-y-3 pb-8"></div>
             </div>
 
-            <!-- TELA 2: ADICIONAR (Formulário) -->
-            <div id="screen-add" class="screen bg-white rounded-xl">
+            <!-- TELA 2: FORMULÁRIO (Receber, Gastar, Guardar) -->
+            <div id="screen-add" class="screen bg-white">
                 <div class="flex items-center gap-3 mb-6">
                     <button onclick="showScreen('screen-dashboard')" class="p-2 hover:bg-slate-100 rounded-full text-slate-500">
                         <i data-lucide="arrow-left"></i>
@@ -125,81 +155,118 @@
                     <h3 id="form-title" class="font-bold text-xl text-slate-800">Adicionar</h3>
                 </div>
 
-                <form id="transaction-form" class="space-y-5">
+                <form id="transaction-form" class="space-y-6">
                     <input type="hidden" id="form-type">
                     
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Valor (R$)</label>
-                        <input type="number" id="form-amount" step="0.01" required placeholder="0.00" class="w-full text-3xl font-bold text-slate-800 border-b-2 border-slate-200 focus:border-blue-500 outline-none py-2 bg-transparent transition-colors">
+                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 text-center">
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Qual o valor?</label>
+                        <div class="flex items-center justify-center gap-1">
+                            <span class="text-2xl text-slate-400 font-bold">R$</span>
+                            <input type="number" id="form-amount" step="0.01" required placeholder="0,00" class="w-40 text-4xl font-extrabold text-slate-800 bg-transparent outline-none text-center" autofocus>
+                        </div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Descrição</label>
-                        <input type="text" id="form-desc" required placeholder="Ex: Salário, Mercado..." class="w-full bg-slate-50 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500/20 border border-transparent focus:border-blue-500 transition-all">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Descrição</label>
+                        <input type="text" id="form-desc" required placeholder="Ex: Mercado, Salário..." class="w-full bg-slate-50 rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-indigo-500/20 border border-slate-200 focus:border-indigo-500 font-medium">
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Categoria</label>
-                            <select id="form-cat" class="w-full bg-slate-50 rounded-xl px-4 py-3 outline-none border-r-8 border-transparent focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700">
-                                <!-- Opções preenchidas via JS -->
-                            </select>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Categoria</label>
+                            <div class="relative">
+                                <select id="form-cat" class="w-full bg-slate-50 rounded-xl px-4 py-4 outline-none border border-slate-200 focus:border-indigo-500 appearance-none font-medium text-slate-700">
+                                    <!-- Options via JS -->
+                                </select>
+                                <i data-lucide="chevron-down" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" width="16"></i>
+                            </div>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Data</label>
-                            <input type="date" id="form-date" required class="w-full bg-slate-50 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700">
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Data</label>
+                            <input type="date" id="form-date" required class="w-full bg-slate-50 rounded-xl px-4 py-4 outline-none border border-slate-200 focus:border-indigo-500 font-medium text-slate-700">
                         </div>
                     </div>
 
-                    <button type="submit" id="btn-save" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 active:scale-95 transition-all mt-4">
-                        Salvar
+                    <button type="submit" id="btn-save" class="w-full text-white font-bold py-4 rounded-xl shadow-xl hover:opacity-90 active:scale-95 transition-all text-lg">
+                        Confirmar
                     </button>
                 </form>
             </div>
 
-            <!-- TELA 3: HISTÓRICO SEMANAL -->
+            <!-- TELA 3: GASTOS FIXOS -->
+            <div id="screen-fixed" class="screen">
+                <div class="flex items-center gap-3 mb-6">
+                    <button onclick="showScreen('screen-dashboard')" class="p-2 hover:bg-slate-100 rounded-full text-slate-500">
+                        <i data-lucide="arrow-left"></i>
+                    </button>
+                    <div>
+                        <h3 class="font-bold text-xl text-slate-800">Contas Fixas</h3>
+                        <p class="text-xs text-slate-500">Gerencie seus boletos mensais</p>
+                    </div>
+                </div>
+
+                <!-- Form rápido para adicionar conta fixa -->
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 mb-6">
+                    <h4 class="font-bold text-indigo-900 text-sm mb-3">Nova Conta Mensal</h4>
+                    <form id="fixed-form" class="flex flex-col gap-3">
+                        <input type="text" id="fix-name" placeholder="Nome (Ex: Internet)" class="p-3 rounded-lg text-sm border-none outline-none focus:ring-2 focus:ring-indigo-300" required>
+                        <div class="flex gap-3">
+                            <input type="number" id="fix-val" placeholder="Valor" class="flex-1 p-3 rounded-lg text-sm border-none outline-none focus:ring-2 focus:ring-indigo-300" required>
+                            <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold text-sm shadow-md hover:bg-indigo-700">Add</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="fixed-list" class="space-y-3 pb-8">
+                    <!-- Lista de fixos -->
+                </div>
+            </div>
+
+            <!-- TELA 4: RELATÓRIO COMPLETO (Histórico) -->
             <div id="screen-history" class="screen">
                 <div class="flex items-center gap-3 mb-6">
                     <button onclick="showScreen('screen-dashboard')" class="p-2 hover:bg-slate-100 rounded-full text-slate-500">
                         <i data-lucide="arrow-left"></i>
                     </button>
-                    <h3 class="font-bold text-xl text-slate-800">Histórico Semanal</h3>
+                    <div>
+                        <h3 class="font-bold text-xl text-slate-800">Relatório Completo</h3>
+                        <p class="text-xs text-slate-500">Toque na semana para ver detalhes</p>
+                    </div>
                 </div>
                 
-                <div id="history-list" class="space-y-4 pb-10">
-                    <!-- Lista de semanas preenchida via JS -->
+                <div id="history-list" class="space-y-4 pb-12">
+                    <!-- Lista de semanas -->
                 </div>
             </div>
 
         </main>
 
-        <!-- MENU MOBILE FIXO -->
-        <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-8 py-3 flex justify-between items-center z-40">
-            <button onclick="showScreen('screen-dashboard')" class="flex flex-col items-center gap-1 text-blue-600">
-                <i data-lucide="home" width="24"></i>
+        <!-- NAVEGAÇÃO MOBILE -->
+        <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 flex justify-between items-center z-40 md:hidden pb-safe">
+            <button onclick="showScreen('screen-dashboard')" class="nav-btn flex flex-col items-center gap-1 text-indigo-600">
+                <i data-lucide="layout-grid" width="24"></i>
                 <span class="text-[10px] font-bold">Início</span>
             </button>
             
-            <button onclick="openAddScreen('expense')" class="bg-blue-600 text-white p-3 rounded-full -mt-10 border-4 border-slate-50 shadow-lg active:scale-95 transition-transform">
-                <i data-lucide="plus" width="28"></i>
+            <button onclick="showScreen('screen-fixed')" class="nav-btn flex flex-col items-center gap-1 text-slate-400 hover:text-indigo-600">
+                <i data-lucide="calendar-check" width="24"></i>
+                <span class="text-[10px] font-bold">Fixos</span>
             </button>
-            
-            <button onclick="showScreen('screen-history')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-600">
-                <i data-lucide="calendar" width="24"></i>
-                <span class="text-[10px] font-bold">Histórico</span>
+
+            <button onclick="showScreen('screen-history')" class="nav-btn flex flex-col items-center gap-1 text-slate-400 hover:text-indigo-600">
+                <i data-lucide="pie-chart" width="24"></i>
+                <span class="text-[10px] font-bold">Relatório</span>
             </button>
         </nav>
     </div>
 
-    <!-- SCRIPTS FIREBASE + LÓGICA -->
+    <!-- SCRIPT DA APLICAÇÃO -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, updateDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- ÁREA DE CONFIGURAÇÃO DO USUÁRIO ---
-        // 1. Copie o objeto 'firebaseConfig' do seu console Firebase
-        // 2. Cole dentro das chaves abaixo:
+        // --- SUAS CHAVES AQUI ---
         const myFirebaseConfig = {
             apiKey: "AIzaSyD4UMogHL-SsBCb06id8eSNegmMRVp8JEs",
             authDomain: "minhasfinancas-7c8e0.firebaseapp.com",
@@ -209,35 +276,19 @@
             appId: "1:833243535294:web:5ebe5609c461144a268bef"
         };
 
-        // --- Configuração Automática ---
-        // Se você preencheu acima, usa a sua. Se não, usa a de teste do ambiente.
-        const isConfigured = myFirebaseConfig.apiKey && myFirebaseConfig.apiKey.length > 0;
-        
-        const firebaseConfig = isConfigured ? myFirebaseConfig : JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
+        const app = initializeApp(myFirebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        // Se usar config própria, não precisa de appId especial
-        const appId = isConfigured ? 'app-pessoal' : (typeof __app_id !== 'undefined' ? __app_id : 'default-app-id');
+        // ID do app para salvar dados no local correto
+        const appId = "1:833243535294:web:5ebe5609c461144a268bef"; 
 
         let currentUser = null;
         let transactions = [];
+        let fixedCosts = [];
 
-        // --- Autenticação ---
-        async function initAuth() {
-            // Se estiver usando sua config própria, usa login anônimo direto
-            if (isConfigured) {
-                await signInAnonymously(auth);
-            } 
-            // Lógica do ambiente de teste (ignorar se estiver usando suas chaves)
-            else if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
-            }
-        }
-        initAuth();
+        // --- AUTH & INIT ---
+        signInAnonymously(auth).catch(console.error);
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -246,277 +297,366 @@
             }
         });
 
-        // --- Funções de Data (Lógica Semanal - Domingo é o início) ---
-        function getWeekId(dateString) {
-            const date = new Date(dateString + 'T00:00:00');
-            const day = date.getDay(); // 0 (Domingo) a 6 (Sábado)
-            
-            const start = new Date(date);
-            start.setDate(date.getDate() - day); // Voltar para o Domingo
-            return start.toISOString().split('T')[0]; // ID da semana é a data do Domingo
-        }
-
-        function getWeekRange(dateString) {
-            const startStr = getWeekId(dateString);
-            const start = new Date(startStr + 'T00:00:00');
-            const end = new Date(start);
-            end.setDate(start.getDate() + 6);
-            return { start, end };
-        }
-
-        function formatDateBR(dateString) {
-            const d = new Date(dateString + 'T00:00:00');
-            return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-        }
-
-        function formatMoney(value) {
-            return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        }
-
-        // --- Lógica Principal ---
+        // --- LOGIC: DATA ---
         function startApp() {
-            const q = query(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions'));
-            
-            onSnapshot(q, (snapshot) => {
-                transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                // Ordenar: mais recente primeiro
+            // Ouvir Transações (Ganhos, Gastos, Reserva)
+            const qTrans = query(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions'));
+            onSnapshot(qTrans, (snap) => {
+                transactions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
-                
                 updateDashboard();
                 updateHistory();
-                
-                // Remover loader
-                document.getElementById('loader').style.opacity = '0';
-                setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
-            }, (error) => {
-                console.error("Erro ao carregar dados:", error);
             });
+
+            // Ouvir Gastos Fixos
+            const qFixed = query(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'fixed_costs'));
+            onSnapshot(qFixed, (snap) => {
+                fixedCosts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                updateFixedScreen();
+                updateDashboard(); // Para atualizar alertas
+            });
+
+            document.getElementById('loader').classList.add('opacity-0');
+            setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
         }
 
-        function updateDashboard() {
-            const today = new Date().toISOString().split('T')[0];
-            const currentWeekId = getWeekId(today);
-            
-            // Filtrar transações APENAS da semana atual (Dom -> Sab)
-            const currentTransactions = transactions.filter(t => getWeekId(t.date) === currentWeekId);
-            
-            // Cálculos
-            let income = 0;
-            let expense = 0;
+        // --- HELPERS ---
+        function getWeekId(dateString) {
+            const d = new Date(dateString + 'T00:00:00');
+            const day = d.getDay();
+            const diff = d.getDate() - day;
+            const start = new Date(d.setDate(diff));
+            return start.toISOString().split('T')[0];
+        }
 
+        function formatMoney(val) {
+            return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function formatDate(dateString) {
+            const [y, m, d] = dateString.split('-');
+            return `${d}/${m}`;
+        }
+
+        // --- DASHBOARD ---
+        function updateDashboard() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const currentWeekId = getWeekId(todayStr);
+
+            // Filtrar transações relevantes
+            const weeklyTrans = transactions.filter(t => getWeekId(t.date) === currentWeekId);
+            const reserveTrans = transactions.filter(t => t.type === 'reserve' || t.type === 'reserve_out');
+
+            // Calcular Saldo Semanal (Exclui movimentações da reserva para o saldo disponível)
+            const income = weeklyTrans.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
+            const expense = weeklyTrans.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
+            
+            // "Guardar" é uma saída do saldo disponível
+            const savedThisWeek = weeklyTrans.filter(t => t.type === 'reserve').reduce((acc, t) => acc + t.amount, 0);
+            // "Sacar Reserva" é uma entrada no saldo disponível
+            const withdrawnThisWeek = weeklyTrans.filter(t => t.type === 'reserve_out').reduce((acc, t) => acc + t.amount, 0);
+
+            const availableBalance = (income + withdrawnThisWeek) - (expense + savedThisWeek);
+
+            // Calcular Total da Reserva (Global)
+            const totalSaved = transactions.filter(t => t.type === 'reserve').reduce((acc, t) => acc + t.amount, 0);
+            const totalWithdrawn = transactions.filter(t => t.type === 'reserve_out').reduce((acc, t) => acc + t.amount, 0);
+            const reserveBalance = totalSaved - totalWithdrawn;
+
+            // Renderizar Valores
+            document.getElementById('display-balance').textContent = formatMoney(availableBalance);
+            document.getElementById('display-balance').className = `text-4xl font-extrabold mt-2 tracking-tight ${availableBalance < 0 ? 'text-red-500' : 'text-slate-800'}`;
+            
+            document.getElementById('display-income').textContent = formatMoney(income);
+            document.getElementById('display-expense').textContent = formatMoney(expense);
+            document.getElementById('display-reserve').textContent = formatMoney(reserveBalance);
+
+            // Renderizar Lista Semanal
             const listEl = document.getElementById('transaction-list');
             listEl.innerHTML = '';
 
-            if(currentTransactions.length === 0) {
+            if (weeklyTrans.length === 0) {
                 listEl.innerHTML = `
-                    <div class="text-center py-10 opacity-50 flex flex-col items-center">
-                        <i data-lucide="calendar-x" class="mb-2 text-slate-300" width="48"></i>
-                        <p class="text-sm text-slate-500">Nenhuma movimentação nesta semana.</p>
+                    <div class="text-center py-8 opacity-50 bg-slate-50 rounded-2xl border border-slate-100 border-dashed">
+                        <i data-lucide="coffee" class="mx-auto mb-2 text-slate-300" width="32"></i>
+                        <p class="text-xs text-slate-500">Semana tranquila, nada por aqui.</p>
                     </div>`;
+            } else {
+                weeklyTrans.forEach(t => {
+                    let icon = 'dollar-sign';
+                    let colorClass = 'bg-slate-100 text-slate-600';
+                    let sign = '';
+                    let valueColor = 'text-slate-800';
+
+                    if (t.type === 'income') {
+                        icon = 'trending-up'; colorClass = 'bg-emerald-100 text-emerald-600';
+                        sign = '+'; valueColor = 'text-emerald-600';
+                    } else if (t.type === 'expense') {
+                        icon = 'shopping-bag'; colorClass = 'bg-red-100 text-red-500';
+                        sign = '-'; valueColor = 'text-red-500';
+                    } else if (t.type === 'reserve') {
+                        icon = 'piggy-bank'; colorClass = 'bg-indigo-100 text-indigo-600';
+                        sign = '-'; valueColor = 'text-indigo-600';
+                    }
+
+                    const item = document.createElement('div');
+                    item.className = "flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-100";
+                    item.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <div class="p-2.5 rounded-xl ${colorClass}">
+                                <i data-lucide="${icon}" width="18"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold text-slate-800 text-sm leading-tight">${t.description}</p>
+                                <p class="text-[10px] text-slate-400 font-medium uppercase mt-0.5">${formatDate(t.date)} • ${t.category}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="font-bold ${valueColor}">${sign}${formatMoney(t.amount)}</span>
+                            <button onclick="deleteItem('${t.id}')" class="block ml-auto text-[10px] text-slate-300 hover:text-red-500 mt-1">Excluir</button>
+                        </div>
+                    `;
+                    listEl.appendChild(item);
+                });
             }
 
-            currentTransactions.forEach(t => {
-                if(t.type === 'income') income += t.amount;
-                else expense += t.amount;
-
-                // Criar HTML da transação
-                const item = document.createElement('div');
-                item.className = "bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex justify-between items-center group";
-                item.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <div class="p-2 rounded-lg ${t.type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-500'}">
-                            <i data-lucide="${t.type === 'income' ? 'trending-up' : 'shopping-cart'}" width="18"></i>
-                        </div>
-                        <div>
-                            <p class="font-bold text-slate-800 text-sm">${t.description}</p>
-                            <p class="text-xs text-slate-400">${formatDateBR(t.date)} • ${t.category}</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <span class="font-bold text-sm block ${t.type === 'income' ? 'text-emerald-600' : 'text-red-500'}">
-                            ${t.type === 'income' ? '+' : '-'}${formatMoney(t.amount)}
-                        </span>
-                        <button onclick="window.deleteItem('${t.id}')" class="text-xs text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">Apagar</button>
-                    </div>
-                `;
-                listEl.appendChild(item);
+            // Verificar Contas Fixas Pendentes do Mês
+            const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+            // Verifica se existe uma transação para este fixo neste mês
+            const pendingFixed = fixedCosts.filter(fc => {
+                const paidThisMonth = transactions.some(t => 
+                    t.fixedCostId === fc.id && t.date.startsWith(currentMonth)
+                );
+                return !paidThisMonth;
             });
 
-            // Atualizar Card Principal
-            document.getElementById('display-income').textContent = formatMoney(income);
-            document.getElementById('display-expense').textContent = formatMoney(expense);
-            
-            const balance = income - expense;
-            const balanceEl = document.getElementById('display-balance');
-            balanceEl.textContent = formatMoney(balance);
-            balanceEl.className = `text-4xl font-extrabold mt-2 ${balance >= 0 ? 'text-emerald-600' : 'text-red-500'}`;
-            
+            const alertContainer = document.getElementById('fixed-alert-container');
+            if (pendingFixed.length > 0) {
+                alertContainer.classList.remove('hidden');
+                alertContainer.querySelector('p.text-xs').textContent = `${pendingFixed.length} contas para pagar este mês`;
+            } else {
+                alertContainer.classList.add('hidden');
+            }
+
             lucide.createIcons();
         }
 
+        // --- GASTOS FIXOS ---
+        function updateFixedScreen() {
+            const listEl = document.getElementById('fixed-list');
+            listEl.innerHTML = '';
+            
+            const currentMonth = new Date().toISOString().slice(0, 7);
+
+            if (fixedCosts.length === 0) {
+                listEl.innerHTML = '<p class="text-center text-slate-400 text-sm mt-4">Nenhuma conta fixa cadastrada.</p>';
+            }
+
+            fixedCosts.forEach(fc => {
+                // Checar se foi pago este mês
+                const paidTrans = transactions.find(t => t.fixedCostId === fc.id && t.date.startsWith(currentMonth));
+                const isPaid = !!paidTrans;
+
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border flex justify-between items-center ${isPaid ? 'bg-emerald-50 border-emerald-100 opacity-60' : 'bg-white border-slate-200 shadow-sm'}`;
+                
+                card.innerHTML = `
+                    <div>
+                        <p class="font-bold text-slate-800">${fc.name}</p>
+                        <p class="text-xs text-slate-500 font-medium">Valor Base: ${formatMoney(fc.amount)}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        ${isPaid 
+                            ? `<span class="text-xs font-bold text-emerald-600 bg-emerald-100 px-2 py-1 rounded-md">PAGO</span>`
+                            : `<button onclick="payFixed('${fc.id}', '${fc.name}', ${fc.amount})" class="bg-indigo-600 text-white text-xs font-bold px-3 py-2 rounded-lg hover:bg-indigo-700 shadow-md transition-transform active:scale-95">Pagar Agora</button>`
+                        }
+                        <button onclick="deleteFixed('${fc.id}')" class="p-2 text-slate-300 hover:text-red-500"><i data-lucide="trash-2" width="16"></i></button>
+                    </div>
+                `;
+                listEl.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        window.payFixed = async (id, name, amount) => {
+            const today = new Date().toISOString().split('T')[0];
+            if(confirm(`Confirmar pagamento de ${name}? Isso criará um gasto de ${formatMoney(amount)} hoje.`)) {
+                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions'), {
+                    type: 'expense',
+                    amount: amount,
+                    description: `Fixo: ${name}`,
+                    category: 'Contas Fixas',
+                    date: today,
+                    fixedCostId: id, // Link para saber que foi pago
+                    createdAt: new Date().toISOString()
+                });
+                alert('Conta paga! Gasto registrado.');
+            }
+        }
+
+        window.deleteFixed = async (id) => {
+            if(confirm('Apagar esta conta fixa da lista? (Histórico antigo permanece)')) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'fixed_costs', id));
+            }
+        }
+
+        document.getElementById('fixed-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('fix-name').value;
+            const amount = parseFloat(document.getElementById('fix-val').value);
+            
+            await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'fixed_costs'), {
+                name, amount, createdAt: new Date().toISOString()
+            });
+            e.target.reset();
+        });
+
+        // --- RELATÓRIO COMPLETO ---
         function updateHistory() {
             const listEl = document.getElementById('history-list');
             listEl.innerHTML = '';
             
-            // Agrupar por semanas
+            // Agrupar semanas
             const weeks = {};
             transactions.forEach(t => {
                 const wId = getWeekId(t.date);
-                if(!weeks[wId]) {
-                    const range = getWeekRange(t.date);
-                    weeks[wId] = {
-                        id: wId,
-                        start: range.start,
-                        end: range.end,
-                        income: 0,
-                        expense: 0,
-                        count: 0
-                    };
-                }
-                if(t.type === 'income') weeks[wId].income += t.amount;
-                else weeks[wId].expense += t.amount;
-                weeks[wId].count++;
+                if (!weeks[wId]) weeks[wId] = { id: wId, transactions: [], totalIncome: 0, totalExpense: 0 };
+                
+                weeks[wId].transactions.push(t);
+                
+                if (t.type === 'income') weeks[wId].totalIncome += t.amount;
+                if (t.type === 'expense') weeks[wId].totalExpense += t.amount;
+                // Ignorar reserva para "Saldo da Semana" no histórico para simplificar, ou contar como gasto se preferir
             });
 
-            // Ordenar semanas (mais novas primeiro)
-            const sortedWeeks = Object.values(weeks).sort((a, b) => b.start - a.start);
-
-            if(sortedWeeks.length === 0) {
-                listEl.innerHTML = '<p class="text-center text-slate-400 mt-10">Nenhum histórico disponível.</p>';
-                return;
-            }
+            const sortedWeeks = Object.values(weeks).sort((a, b) => b.id.localeCompare(a.id));
 
             sortedWeeks.forEach(w => {
-                const balance = w.income - w.expense;
+                const startObj = new Date(w.id + 'T00:00:00'); // ID é o domingo
+                const endObj = new Date(startObj); endObj.setDate(endObj.getDate() + 6);
+                
+                const balance = w.totalIncome - w.totalExpense;
+                const weekLabel = `${formatDate(w.id)} até ${formatDate(endObj.toISOString().split('T')[0])}`;
+
+                // Construir HTML da Lista Detalhada
+                let itemsHtml = w.transactions.map(t => {
+                    const color = t.type === 'income' ? 'text-emerald-600' : (t.type === 'reserve' ? 'text-indigo-600' : 'text-red-500');
+                    const sign = t.type === 'income' ? '+' : '-';
+                    return `
+                        <div class="flex justify-between py-2 border-b border-slate-50 last:border-0">
+                            <div>
+                                <p class="text-xs font-bold text-slate-700">${t.description}</p>
+                                <p class="text-[10px] text-slate-400">${t.category} • ${formatDate(t.date)}</p>
+                            </div>
+                            <span class="text-xs font-bold ${color}">${sign}${formatMoney(t.amount)}</span>
+                        </div>
+                    `;
+                }).join('');
+
                 const card = document.createElement('div');
                 card.className = "bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden";
                 card.innerHTML = `
-                    <div class="bg-slate-50 px-5 py-3 border-b border-slate-100 flex justify-between items-center">
-                        <div>
-                            <span class="text-[10px] font-bold text-slate-400 uppercase">Semana</span>
-                            <h4 class="font-bold text-slate-700 text-sm">
-                                ${formatDateBR(w.start.toISOString().split('T')[0])} até ${formatDateBR(w.end.toISOString().split('T')[0])}
-                            </h4>
+                    <div onclick="toggleDetails(this)" class="p-4 cursor-pointer hover:bg-slate-50 transition-colors">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold text-indigo-500 bg-indigo-50 px-2 py-1 rounded-md uppercase tracking-wide">Semana ${weekLabel}</span>
+                            <i data-lucide="chevron-down" width="16" class="text-slate-400 transition-transform duration-300 arrow-icon"></i>
                         </div>
-                        <div class="text-right ${balance >= 0 ? 'text-emerald-600' : 'text-red-500'}">
-                            <span class="text-[10px] font-bold opacity-70 block uppercase">Saldo Final</span>
-                            <span class="font-bold">${formatMoney(balance)}</span>
+                        <div class="flex justify-between items-end">
+                            <div>
+                                <span class="text-[10px] text-slate-400 block mb-0.5">Saldo da Semana</span>
+                                <span class="font-bold text-lg ${balance >= 0 ? 'text-emerald-600' : 'text-red-500'}">${formatMoney(balance)}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-[10px] text-slate-400">Gasto: ${formatMoney(w.totalExpense)}</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="p-4 grid grid-cols-2 gap-4">
-                        <div class="text-center">
-                            <span class="text-xs text-slate-400 font-bold block mb-1">Entrou</span>
-                            <span class="text-sm font-bold text-emerald-600">${formatMoney(w.income)}</span>
-                        </div>
-                        <div class="text-center border-l border-slate-100">
-                            <span class="text-xs text-slate-400 font-bold block mb-1">Saiu</span>
-                            <span class="text-sm font-bold text-red-500">${formatMoney(w.expense)}</span>
+                    
+                    <!-- Detalhes Expansíveis -->
+                    <div class="details-content bg-slate-50 px-4">
+                        <div class="py-3">
+                            <h5 class="text-[10px] font-bold text-slate-400 uppercase mb-2">Extrato Detalhado</h5>
+                            ${itemsHtml}
                         </div>
                     </div>
                 `;
                 listEl.appendChild(card);
             });
+            lucide.createIcons();
         }
 
-        // --- Manipulação da UI (Global para acesso no HTML) ---
-        
-        window.showScreen = (screenId) => {
+        window.toggleDetails = (headerEl) => {
+            const content = headerEl.nextElementSibling;
+            const arrow = headerEl.querySelector('.arrow-icon');
+            
+            if (content.style.maxHeight) {
+                content.style.maxHeight = null;
+                arrow.style.transform = 'rotate(0deg)';
+            } else {
+                content.style.maxHeight = content.scrollHeight + "px";
+                arrow.style.transform = 'rotate(180deg)';
+            }
+        };
+
+        // --- UI & FORMS ---
+        window.showScreen = (id) => {
             document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
-            document.getElementById(screenId).classList.add('active');
+            document.getElementById(id).classList.add('active');
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // Highlight nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('text-indigo-600', 'text-slate-400'));
+            if(id === 'screen-dashboard') document.querySelectorAll('.nav-btn')[0].classList.replace('text-slate-400', 'text-indigo-600');
+            if(id === 'screen-fixed') document.querySelectorAll('.nav-btn')[1].classList.replace('text-slate-400', 'text-indigo-600');
+            if(id === 'screen-history') document.querySelectorAll('.nav-btn')[2].classList.replace('text-slate-400', 'text-indigo-600');
         };
 
         window.openAddScreen = (type) => {
             const form = document.getElementById('transaction-form');
             form.reset();
-            
-            // Configurar Data Hoje
             document.getElementById('form-date').value = new Date().toISOString().split('T')[0];
-            
-            const titleEl = document.getElementById('form-title');
-            const btnEl = document.getElementById('btn-save');
-            const catEl = document.getElementById('form-cat');
             document.getElementById('form-type').value = type;
 
-            catEl.innerHTML = '<option value="Outros">Outros</option>';
-            
-            if (type === 'income') {
-                titleEl.textContent = 'Adicionar Ganho';
-                titleEl.className = "font-bold text-xl text-emerald-600";
-                btnEl.className = "w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-emerald-700 active:scale-95 transition-all mt-4";
-                btnEl.textContent = "Confirmar Recebimento";
-                
-                ['Salário Semanal', 'Extra', 'Presente'].forEach(c => {
-                    const opt = document.createElement('option');
-                    opt.value = c; opt.innerText = c;
-                    catEl.appendChild(opt);
-                });
-            } else {
-                titleEl.textContent = 'Adicionar Gasto';
-                titleEl.className = "font-bold text-xl text-red-600";
-                btnEl.className = "w-full bg-red-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-red-700 active:scale-95 transition-all mt-4";
-                btnEl.textContent = "Confirmar Gasto";
+            const title = document.getElementById('form-title');
+            const btn = document.getElementById('btn-save');
+            const cat = document.getElementById('form-cat');
+            const color = type === 'income' ? 'emerald' : (type === 'reserve' ? 'indigo' : 'red');
 
-                ['Alimentação', 'Transporte', 'Lazer', 'Contas', 'Casa'].forEach(c => {
-                    const opt = document.createElement('option');
-                    opt.value = c; opt.innerText = c;
-                    catEl.appendChild(opt);
-                });
-            }
+            title.textContent = type === 'income' ? 'Nova Entrada' : (type === 'reserve' ? 'Nova Reserva' : 'Novo Gasto');
+            title.className = `font-bold text-xl text-${color}-600`;
+            
+            btn.className = `w-full text-white font-bold py-4 rounded-xl shadow-xl hover:opacity-90 active:scale-95 transition-all text-lg bg-${color}-600`;
+            btn.textContent = "Confirmar";
+
+            cat.innerHTML = '<option value="Outros">Outros</option>';
+            const cats = type === 'income' 
+                ? ['Salário', 'Extra', 'Presente'] 
+                : (type === 'reserve' ? ['Cofrinho', 'Meta', 'Emergência'] : ['Alimentação', 'Transporte', 'Lazer', 'Casa', 'Contas']);
+            
+            cats.forEach(c => {
+                const opt = document.createElement('option'); opt.value = c; opt.innerText = c; cat.appendChild(opt);
+            });
 
             window.showScreen('screen-add');
         };
 
         window.deleteItem = async (id) => {
-            if(confirm('Tem certeza que deseja apagar este item?')) {
-                try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions', id));
-                } catch (e) {
-                    alert('Erro ao apagar');
-                }
-            }
+            if(confirm('Apagar item?')) await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions', id));
         };
 
-        // --- Submissão do Formulário ---
         document.getElementById('transaction-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const type = document.getElementById('form-type').value;
             const amount = parseFloat(document.getElementById('form-amount').value);
             const desc = document.getElementById('form-desc').value;
             const category = document.getElementById('form-cat').value;
             const date = document.getElementById('form-date').value;
 
-            if(!amount || !desc || !date) return;
-
-            const btn = document.getElementById('btn-save');
-            const originalText = btn.textContent;
-            btn.disabled = true;
-            btn.textContent = "Salvando...";
-
-            try {
-                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions'), {
-                    type,
-                    amount,
-                    description: desc,
-                    category,
-                    date,
-                    createdAt: new Date().toISOString()
-                });
-                
-                // Sucesso
-                window.showScreen('screen-dashboard');
-            } catch (error) {
-                console.error(error);
-                alert("Erro ao salvar. Tente novamente.");
-            } finally {
-                btn.disabled = false;
-                btn.textContent = originalText;
-            }
+            await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions'), {
+                type, amount, description: desc, category, date, createdAt: new Date().toISOString()
+            });
+            window.showScreen('screen-dashboard');
         });
-        
-        // Inicializar ícones
-        lucide.createIcons();
     </script>
 </body>
 </html>

@@ -38,82 +38,92 @@
     <!-- APP CONTAINER -->
     <div class="max-w-md mx-auto min-h-screen bg-white shadow-2xl relative pb-24">
 
-        <!-- HEADER PRINCIPAL -->
-        <header class="bg-indigo-600 text-white pt-10 pb-24 px-6 rounded-b-[3rem] relative shadow-lg overflow-hidden">
-            <!-- Efeito de fundo -->
-            <div class="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-                <div class="absolute right-0 top-0 w-64 h-64 bg-white rounded-full mix-blend-overlay filter blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
-            </div>
-
-            <div class="relative z-10 flex justify-between items-center mb-6">
-                <div>
-                    <h1 class="text-xs text-indigo-200 uppercase tracking-widest font-bold">Gestão Pessoal</h1>
-                    <h2 class="text-xl font-bold flex items-center gap-2">
-                        Olá, Chefe <i data-lucide="crown" width="18" class="text-yellow-400"></i>
-                    </h2>
+        <!-- HEADER PRINCIPAL (Corrigido) -->
+        <!-- Removido overflow-hidden do pai para o card não ser cortado -->
+        <header class="relative mb-20"> 
+            
+            <!-- Fundo Azul com Formato Redondo -->
+            <div class="bg-indigo-600 pb-32 pt-12 px-6 rounded-b-[3rem] shadow-lg relative z-10">
+                
+                <!-- Efeito de fundo (Bolhas) - Isolado para não vazar -->
+                <div class="absolute inset-0 rounded-b-[3rem] overflow-hidden pointer-events-none z-0">
+                    <div class="absolute right-0 top-0 w-64 h-64 bg-white rounded-full mix-blend-overlay filter blur-3xl transform translate-x-1/2 -translate-y-1/2 opacity-20"></div>
+                    <div class="absolute left-0 bottom-0 w-48 h-48 bg-indigo-400 rounded-full mix-blend-overlay filter blur-2xl transform -translate-x-1/2 translate-y-1/2 opacity-20"></div>
                 </div>
-                <!-- Total Guardado (Reserva) -->
-                <div class="bg-indigo-700/50 p-2 pr-4 rounded-xl backdrop-blur-md flex items-center gap-3 border border-indigo-500/30">
-                    <div class="bg-indigo-500 p-2 rounded-lg">
-                        <i data-lucide="piggy-bank" class="text-white" width="20"></i>
-                    </div>
+
+                <!-- Conteúdo do Topo -->
+                <div class="relative z-20 flex justify-between items-center">
                     <div>
-                        <span class="text-[10px] text-indigo-200 uppercase font-bold block">Reserva</span>
-                        <span id="display-reserve" class="font-bold text-sm">R$ 0,00</span>
+                        <h1 class="text-xs text-indigo-200 uppercase tracking-widest font-bold mb-1">Gestão Pessoal</h1>
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                            Olá, Chefe <i data-lucide="crown" width="20" class="text-yellow-400 fill-yellow-400"></i>
+                        </h2>
+                    </div>
+                    
+                    <!-- Box Reserva -->
+                    <div class="bg-indigo-700/60 p-2 pr-4 rounded-xl backdrop-blur-md flex items-center gap-3 border border-indigo-500/30 shadow-sm">
+                        <div class="bg-indigo-500 p-2 rounded-lg shadow-inner">
+                            <i data-lucide="piggy-bank" class="text-white" width="20"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-indigo-200 uppercase font-bold block leading-tight">Reserva</span>
+                            <span id="display-reserve" class="font-bold text-sm text-white">R$ 0,00</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- CARD SALDO DISPONÍVEL (Flutuante) -->
-            <div class="absolute left-6 right-6 -bottom-16 bg-white rounded-3xl shadow-xl p-6 text-center fade-enter z-20">
-                <span class="text-slate-400 text-xs uppercase font-bold tracking-wider">Disponível na Semana</span>
-                <div id="display-balance" class="text-4xl font-extrabold mt-2 text-slate-800 tracking-tight">R$ 0,00</div>
-                
-                <div class="grid grid-cols-2 mt-6 pt-4 border-t border-slate-100 divide-x divide-slate-100">
-                    <div class="px-2">
-                        <div class="flex items-center justify-center gap-1 text-emerald-600 text-xs font-bold uppercase mb-1">
-                            <i data-lucide="arrow-up" width="14"></i> Receita
+            <!-- Posicionado absolutamente em relação ao container header -->
+            <div class="absolute left-6 right-6 -bottom-16 z-30">
+                <div class="bg-white rounded-3xl shadow-xl p-6 text-center fade-enter border border-slate-100">
+                    <span class="text-slate-400 text-xs uppercase font-bold tracking-wider block mb-1">Disponível na Semana</span>
+                    <div id="display-balance" class="text-4xl font-extrabold text-slate-800 tracking-tight">R$ 0,00</div>
+                    
+                    <div class="grid grid-cols-2 mt-5 pt-4 border-t border-slate-50 divide-x divide-slate-50">
+                        <div class="px-2">
+                            <div class="flex items-center justify-center gap-1 text-emerald-600 text-[10px] font-bold uppercase mb-1">
+                                <i data-lucide="arrow-up" width="14"></i> Receita
+                            </div>
+                            <span id="display-income" class="font-bold text-slate-700 text-sm">R$ 0,00</span>
                         </div>
-                        <span id="display-income" class="font-bold text-slate-700 text-sm">R$ 0,00</span>
-                    </div>
-                    <div class="px-2">
-                        <div class="flex items-center justify-center gap-1 text-red-500 text-xs font-bold uppercase mb-1">
-                            <i data-lucide="arrow-down" width="14"></i> Despesa
+                        <div class="px-2">
+                            <div class="flex items-center justify-center gap-1 text-red-500 text-[10px] font-bold uppercase mb-1">
+                                <i data-lucide="arrow-down" width="14"></i> Despesa
+                            </div>
+                            <span id="display-expense" class="font-bold text-slate-700 text-sm">R$ 0,00</span>
                         </div>
-                        <span id="display-expense" class="font-bold text-slate-700 text-sm">R$ 0,00</span>
                     </div>
                 </div>
             </div>
         </header>
 
-        <div class="h-20"></div>
-
         <!-- CONTEÚDO -->
-        <main class="px-6 relative z-10">
+        <main class="px-6 relative z-10 mt-4">
             
             <!-- TELA 1: DASHBOARD -->
             <div id="screen-dashboard" class="screen active fade-enter">
                 
                 <!-- Ações Rápidas -->
-                <h3 class="font-bold text-slate-800 text-sm mb-3 mt-4">Ações Rápidas</h3>
+                <h3 class="font-bold text-slate-800 text-sm mb-3">Ações Rápidas</h3>
                 <div class="grid grid-cols-3 gap-3 mb-8">
-                    <button onclick="openAddScreen('income')" class="bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 p-3 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95">
-                        <div class="bg-emerald-500 text-white p-2 rounded-xl shadow-sm">
-                            <i data-lucide="plus" width="20"></i>
+                    <button onclick="openAddScreen('income')" class="bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 p-3 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95 group">
+                        <div class="bg-emerald-500 text-white p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
+                            <i data-lucide="plus" width="22"></i>
                         </div>
                         <span class="text-emerald-900 font-bold text-xs">Receber</span>
                     </button>
                     
-                    <button onclick="openAddScreen('expense')" class="bg-red-50 hover:bg-red-100 border border-red-100 p-3 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95">
-                        <div class="bg-red-500 text-white p-2 rounded-xl shadow-sm">
-                            <i data-lucide="minus" width="20"></i>
+                    <button onclick="openAddScreen('expense')" class="bg-red-50 hover:bg-red-100 border border-red-100 p-3 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95 group">
+                        <div class="bg-red-500 text-white p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
+                            <i data-lucide="minus" width="22"></i>
                         </div>
                         <span class="text-red-900 font-bold text-xs">Gastar</span>
                     </button>
 
-                    <button onclick="openAddScreen('reserve')" class="bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 p-3 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95">
-                        <div class="bg-indigo-500 text-white p-2 rounded-xl shadow-sm">
-                            <i data-lucide="piggy-bank" width="20"></i>
+                    <button onclick="openAddScreen('reserve')" class="bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 p-3 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95 group">
+                        <div class="bg-indigo-500 text-white p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
+                            <i data-lucide="piggy-bank" width="22"></i>
                         </div>
                         <span class="text-indigo-900 font-bold text-xs">Guardar</span>
                     </button>
@@ -121,14 +131,14 @@
 
                 <!-- Alerta de Contas Fixas -->
                 <div id="fixed-alert-container" class="hidden mb-6">
-                    <div onclick="showScreen('screen-fixed')" class="bg-orange-50 border border-orange-100 rounded-2xl p-4 flex items-center justify-between cursor-pointer active:bg-orange-100">
+                    <div onclick="showScreen('screen-fixed')" class="bg-orange-50 border border-orange-100 rounded-2xl p-4 flex items-center justify-between cursor-pointer active:bg-orange-100 shadow-sm">
                         <div class="flex items-center gap-3">
                             <div class="bg-orange-100 p-2 rounded-full text-orange-500">
                                 <i data-lucide="calendar-clock" width="20"></i>
                             </div>
                             <div>
                                 <p class="font-bold text-orange-900 text-sm">Contas Pendentes</p>
-                                <p class="text-xs text-orange-600">Toque para ver e pagar</p>
+                                <p class="text-xs text-orange-600 font-medium">Toque para ver e pagar</p>
                             </div>
                         </div>
                         <i data-lucide="chevron-right" class="text-orange-300" width="20"></i>
@@ -158,24 +168,24 @@
                 <form id="transaction-form" class="space-y-6">
                     <input type="hidden" id="form-type">
                     
-                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 text-center">
+                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 text-center shadow-inner">
                         <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Qual o valor?</label>
                         <div class="flex items-center justify-center gap-1">
                             <span class="text-2xl text-slate-400 font-bold">R$</span>
-                            <input type="number" id="form-amount" step="0.01" required placeholder="0,00" class="w-40 text-4xl font-extrabold text-slate-800 bg-transparent outline-none text-center" autofocus>
+                            <input type="number" id="form-amount" step="0.01" required placeholder="0,00" class="w-40 text-4xl font-extrabold text-slate-800 bg-transparent outline-none text-center placeholder-slate-200" autofocus>
                         </div>
                     </div>
 
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Descrição</label>
-                        <input type="text" id="form-desc" required placeholder="Ex: Mercado, Salário..." class="w-full bg-slate-50 rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-indigo-500/20 border border-slate-200 focus:border-indigo-500 font-medium">
+                        <input type="text" id="form-desc" required placeholder="Ex: Mercado, Salário..." class="w-full bg-slate-50 rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-indigo-500/20 border border-slate-200 focus:border-indigo-500 font-medium transition-all">
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Categoria</label>
                             <div class="relative">
-                                <select id="form-cat" class="w-full bg-slate-50 rounded-xl px-4 py-4 outline-none border border-slate-200 focus:border-indigo-500 appearance-none font-medium text-slate-700">
+                                <select id="form-cat" class="w-full bg-slate-50 rounded-xl px-4 py-4 outline-none border border-slate-200 focus:border-indigo-500 appearance-none font-medium text-slate-700 transition-all">
                                     <!-- Options via JS -->
                                 </select>
                                 <i data-lucide="chevron-down" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" width="16"></i>
@@ -183,12 +193,12 @@
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Data</label>
-                            <input type="date" id="form-date" required class="w-full bg-slate-50 rounded-xl px-4 py-4 outline-none border border-slate-200 focus:border-indigo-500 font-medium text-slate-700">
+                            <input type="date" id="form-date" required class="w-full bg-slate-50 rounded-xl px-4 py-4 outline-none border border-slate-200 focus:border-indigo-500 font-medium text-slate-700 transition-all">
                         </div>
                     </div>
 
-                    <button type="submit" id="btn-save" class="w-full text-white font-bold py-4 rounded-xl shadow-xl hover:opacity-90 active:scale-95 transition-all text-lg">
-                        Confirmar
+                    <button type="submit" id="btn-save" class="w-full text-white font-bold py-4 rounded-xl shadow-xl hover:opacity-90 active:scale-95 transition-all text-lg flex justify-center items-center gap-2">
+                        <span>Confirmar</span> <i data-lucide="check" width="20"></i>
                     </button>
                 </form>
             </div>
@@ -206,13 +216,15 @@
                 </div>
 
                 <!-- Form rápido para adicionar conta fixa -->
-                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 mb-6">
-                    <h4 class="font-bold text-indigo-900 text-sm mb-3">Nova Conta Mensal</h4>
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 mb-6 shadow-sm">
+                    <h4 class="font-bold text-indigo-900 text-sm mb-3 flex items-center gap-2">
+                        <i data-lucide="plus-circle" width="16"></i> Nova Conta Mensal
+                    </h4>
                     <form id="fixed-form" class="flex flex-col gap-3">
-                        <input type="text" id="fix-name" placeholder="Nome (Ex: Internet)" class="p-3 rounded-lg text-sm border-none outline-none focus:ring-2 focus:ring-indigo-300" required>
+                        <input type="text" id="fix-name" placeholder="Nome (Ex: Internet)" class="p-3 rounded-lg text-sm border-none outline-none focus:ring-2 focus:ring-indigo-300 shadow-sm" required>
                         <div class="flex gap-3">
-                            <input type="number" id="fix-val" placeholder="Valor" class="flex-1 p-3 rounded-lg text-sm border-none outline-none focus:ring-2 focus:ring-indigo-300" required>
-                            <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold text-sm shadow-md hover:bg-indigo-700">Add</button>
+                            <input type="number" id="fix-val" placeholder="Valor" class="flex-1 p-3 rounded-lg text-sm border-none outline-none focus:ring-2 focus:ring-indigo-300 shadow-sm" required>
+                            <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold text-sm shadow-md hover:bg-indigo-700 active:scale-95 transition-all">Add</button>
                         </div>
                     </form>
                 </div>
@@ -242,18 +254,18 @@
         </main>
 
         <!-- NAVEGAÇÃO MOBILE -->
-        <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 flex justify-between items-center z-40 md:hidden pb-safe">
-            <button onclick="showScreen('screen-dashboard')" class="nav-btn flex flex-col items-center gap-1 text-indigo-600">
+        <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 flex justify-between items-center z-50 md:hidden pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+            <button onclick="showScreen('screen-dashboard')" class="nav-btn flex flex-col items-center gap-1 text-indigo-600 transition-colors">
                 <i data-lucide="layout-grid" width="24"></i>
                 <span class="text-[10px] font-bold">Início</span>
             </button>
             
-            <button onclick="showScreen('screen-fixed')" class="nav-btn flex flex-col items-center gap-1 text-slate-400 hover:text-indigo-600">
+            <button onclick="showScreen('screen-fixed')" class="nav-btn flex flex-col items-center gap-1 text-slate-400 hover:text-indigo-600 transition-colors">
                 <i data-lucide="calendar-check" width="24"></i>
                 <span class="text-[10px] font-bold">Fixos</span>
             </button>
 
-            <button onclick="showScreen('screen-history')" class="nav-btn flex flex-col items-center gap-1 text-slate-400 hover:text-indigo-600">
+            <button onclick="showScreen('screen-history')" class="nav-btn flex flex-col items-center gap-1 text-slate-400 hover:text-indigo-600 transition-colors">
                 <i data-lucide="pie-chart" width="24"></i>
                 <span class="text-[10px] font-bold">Relatório</span>
             </button>
@@ -625,8 +637,9 @@
             title.textContent = type === 'income' ? 'Nova Entrada' : (type === 'reserve' ? 'Nova Reserva' : 'Novo Gasto');
             title.className = `font-bold text-xl text-${color}-600`;
             
-            btn.className = `w-full text-white font-bold py-4 rounded-xl shadow-xl hover:opacity-90 active:scale-95 transition-all text-lg bg-${color}-600`;
-            btn.textContent = "Confirmar";
+            // Correção da interpolação de classe no botão
+            btn.className = `w-full text-white font-bold py-4 rounded-xl shadow-xl hover:opacity-90 active:scale-95 transition-all text-lg flex justify-center items-center gap-2 bg-${color}-600`;
+            btn.innerHTML = `<span>Confirmar</span> <i data-lucide="check" width="20"></i>`;
 
             cat.innerHTML = '<option value="Outros">Outros</option>';
             const cats = type === 'income' 
@@ -638,6 +651,7 @@
             });
 
             window.showScreen('screen-add');
+            setTimeout(() => lucide.createIcons(), 50); // Recriar ícones após renderizar
         };
 
         window.deleteItem = async (id) => {

@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão Financeira Semanal</title>
+    
+    <!-- Tailwind CSS (Estilos Utilitários) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Ícones (Lucide) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; overflow-x: hidden; }
+        
+        /* Transições de Tela */
+        .screen { display: none; opacity: 0; transition: opacity 0.3s ease; }
+        .screen.active { display: block; opacity: 1; }
+        
+        /* Animações */
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .animate-slide-up { animation: slideUp 0.4s ease-out forwards; }
+
+        /* Loading */
+        #loader { display: flex; }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <!-- TELA DE LOADING -->
+    <div id="loader" class="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+        <p class="text-slate-500 text-sm font-medium">Carregando suas finanças...</p>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="max-w-md mx-auto min-h-screen bg-white shadow-2xl relative pb-20">
+
+        <!-- HEADER (Comum) -->
+        <header class="bg-blue-600 text-white pt-10 pb-20 px-6 rounded-b-[2.5rem] relative shadow-lg">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h1 class="text-xs opacity-80 uppercase tracking-wide font-semibold">Controle Semanal</h1>
+                    <h2 class="text-2xl font-bold flex items-center gap-2">
+                        <i data-lucide="wallet"></i> Minhas Finanças
+                    </h2>
+                </div>
+                <div class="bg-white/20 p-2 rounded-full backdrop-blur-sm">
+                    <i data-lucide="user" class="text-white"></i>
+                </div>
+            </div>
+
+            <!-- CARD DE SALDO (Flutuante) -->
+            <div class="absolute left-6 right-6 -bottom-16 bg-white rounded-2xl shadow-xl p-6 text-center animate-slide-up">
+                <span class="text-slate-400 text-xs uppercase font-bold tracking-wider">Saldo desta Semana</span>
+                <div id="display-balance" class="text-4xl font-extrabold mt-2 text-slate-800">R$ 0,00</div>
+                
+                <div class="grid grid-cols-2 mt-6 pt-4 border-t border-slate-100">
+                    <div class="text-center">
+                        <div class="flex items-center justify-center gap-1 text-emerald-600 text-xs font-bold uppercase mb-1">
+                            <i data-lucide="arrow-up-circle" width="16"></i> Entrou
+                        </div>
+                        <span id="display-income" class="font-bold text-slate-700">R$ 0,00</span>
+                    </div>
+                    <div class="text-center border-l border-slate-100">
+                        <div class="flex items-center justify-center gap-1 text-red-500 text-xs font-bold uppercase mb-1">
+                            <i data-lucide="arrow-down-circle" width="16"></i> Saiu
+                        </div>
+                        <span id="display-expense" class="font-bold text-slate-700">R$ 0,00</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ESPAÇADOR DO CARD -->
+        <div class="h-24"></div>
+
+        <!-- CONTEÚDO DINÂMICO -->
+        <main class="px-6 relative">
+            
+            <!-- TELA 1: DASHBOARD -->
+            <div id="screen-dashboard" class="screen active animate-slide-up">
+                <!-- Botões de Ação -->
+                <div class="grid grid-cols-2 gap-4 mb-8">
+                    <button onclick="openAddScreen('income')" class="bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 p-4 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95">
+                        <div class="bg-emerald-500 text-white p-2 rounded-full shadow-sm">
+                            <i data-lucide="plus"></i>
+                        </div>
+                        <span class="text-emerald-800 font-bold text-sm">Recebi</span>
+                    </button>
+                    <button onclick="openAddScreen('expense')" class="bg-red-50 border border-red-100 hover:bg-red-100 p-4 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95">
+                        <div class="bg-red-500 text-white p-2 rounded-full shadow-sm">
+                            <i data-lucide="minus"></i>
+                        </div>
+                        <span class="text-red-800 font-bold text-sm">Gastei</span>
+                    </button>
+                </div>
+
+                <!-- Lista de Transações -->
+                <div class="flex justify-between items-end mb-4">
+                    <h3 class="font-bold text-slate-700 text-lg">Essa Semana</h3>
+                    <button onclick="showScreen('screen-history')" class="text-blue-600 text-xs font-bold hover:underline cursor-pointer">
+                        Ver Fechamentos
+                    </button>
+                </div>
+
+                <div id="transaction-list" class="space-y-3 pb-4">
+                    <!-- Itens serão injetados aqui via JS -->
+                    <div class="text-center py-10 opacity-50">
+                        <p class="text-sm text-slate-500">Sem dados nesta semana.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TELA 2: ADICIONAR (Formulário) -->
+            <div id="screen-add" class="screen bg-white rounded-xl">
+                <div class="flex items-center gap-3 mb-6">
+                    <button onclick="showScreen('screen-dashboard')" class="p-2 hover:bg-slate-100 rounded-full text-slate-500">
+                        <i data-lucide="arrow-left"></i>
+                    </button>
+                    <h3 id="form-title" class="font-bold text-xl text-slate-800">Adicionar</h3>
+                </div>
+
+                <form id="transaction-form" class="space-y-5">
+                    <input type="hidden" id="form-type">
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Valor (R$)</label>
+                        <input type="number" id="form-amount" step="0.01" required placeholder="0.00" class="w-full text-3xl font-bold text-slate-800 border-b-2 border-slate-200 focus:border-blue-500 outline-none py-2 bg-transparent transition-colors">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Descrição</label>
+                        <input type="text" id="form-desc" required placeholder="Ex: Salário, Mercado..." class="w-full bg-slate-50 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500/20 border border-transparent focus:border-blue-500 transition-all">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Categoria</label>
+                            <select id="form-cat" class="w-full bg-slate-50 rounded-xl px-4 py-3 outline-none border-r-8 border-transparent focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700">
+                                <!-- Opções preenchidas via JS -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Data</label>
+                            <input type="date" id="form-date" required class="w-full bg-slate-50 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-700">
+                        </div>
+                    </div>
+
+                    <button type="submit" id="btn-save" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-blue-700 active:scale-95 transition-all mt-4">
+                        Salvar
+                    </button>
+                </form>
+            </div>
+
+            <!-- TELA 3: HISTÓRICO SEMANAL -->
+            <div id="screen-history" class="screen">
+                <div class="flex items-center gap-3 mb-6">
+                    <button onclick="showScreen('screen-dashboard')" class="p-2 hover:bg-slate-100 rounded-full text-slate-500">
+                        <i data-lucide="arrow-left"></i>
+                    </button>
+                    <h3 class="font-bold text-xl text-slate-800">Histórico Semanal</h3>
+                </div>
+                
+                <div id="history-list" class="space-y-4 pb-10">
+                    <!-- Lista de semanas preenchida via JS -->
+                </div>
+            </div>
+
+        </main>
+
+        <!-- MENU MOBILE FIXO -->
+        <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-8 py-3 flex justify-between items-center z-40">
+            <button onclick="showScreen('screen-dashboard')" class="flex flex-col items-center gap-1 text-blue-600">
+                <i data-lucide="home" width="24"></i>
+                <span class="text-[10px] font-bold">Início</span>
+            </button>
+            
+            <button onclick="openAddScreen('expense')" class="bg-blue-600 text-white p-3 rounded-full -mt-10 border-4 border-slate-50 shadow-lg active:scale-95 transition-transform">
+                <i data-lucide="plus" width="28"></i>
+            </button>
+            
+            <button onclick="showScreen('screen-history')" class="flex flex-col items-center gap-1 text-slate-400 hover:text-blue-600">
+                <i data-lucide="calendar" width="24"></i>
+                <span class="text-[10px] font-bold">Histórico</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- SCRIPTS FIREBASE + LÓGICA -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- ÁREA DE CONFIGURAÇÃO DO USUÁRIO ---
+        // 1. Copie o objeto 'firebaseConfig' do seu console Firebase
+        // 2. Cole dentro das chaves abaixo:
+        const myFirebaseConfig = {
+            apiKey: "AIzaSyD4UMogHL-SsBCb06id8eSNegmMRVp8JEs",
+            authDomain: "minhasfinancas-7c8e0.firebaseapp.com",
+            projectId: "minhasfinancas-7c8e0",
+            storageBucket: "minhasfinancas-7c8e0.firebasestorage.app",
+            messagingSenderId: "833243535294",
+            appId: "1:833243535294:web:5ebe5609c461144a268bef"
+        };
+
+        // --- Configuração Automática ---
+        // Se você preencheu acima, usa a sua. Se não, usa a de teste do ambiente.
+        const isConfigured = myFirebaseConfig.apiKey && myFirebaseConfig.apiKey.length > 0;
+        
+        const firebaseConfig = isConfigured ? myFirebaseConfig : JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        // Se usar config própria, não precisa de appId especial
+        const appId = isConfigured ? 'app-pessoal' : (typeof __app_id !== 'undefined' ? __app_id : 'default-app-id');
+
+        let currentUser = null;
+        let transactions = [];
+
+        // --- Autenticação ---
+        async function initAuth() {
+            // Se estiver usando sua config própria, usa login anônimo direto
+            if (isConfigured) {
+                await signInAnonymously(auth);
+            } 
+            // Lógica do ambiente de teste (ignorar se estiver usando suas chaves)
+            else if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+        }
+        initAuth();
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                startApp();
+            }
+        });
+
+        // --- Funções de Data (Lógica Semanal - Domingo é o início) ---
+        function getWeekId(dateString) {
+            const date = new Date(dateString + 'T00:00:00');
+            const day = date.getDay(); // 0 (Domingo) a 6 (Sábado)
+            
+            const start = new Date(date);
+            start.setDate(date.getDate() - day); // Voltar para o Domingo
+            return start.toISOString().split('T')[0]; // ID da semana é a data do Domingo
+        }
+
+        function getWeekRange(dateString) {
+            const startStr = getWeekId(dateString);
+            const start = new Date(startStr + 'T00:00:00');
+            const end = new Date(start);
+            end.setDate(start.getDate() + 6);
+            return { start, end };
+        }
+
+        function formatDateBR(dateString) {
+            const d = new Date(dateString + 'T00:00:00');
+            return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        }
+
+        function formatMoney(value) {
+            return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        // --- Lógica Principal ---
+        function startApp() {
+            const q = query(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions'));
+            
+            onSnapshot(q, (snapshot) => {
+                transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Ordenar: mais recente primeiro
+                transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                updateDashboard();
+                updateHistory();
+                
+                // Remover loader
+                document.getElementById('loader').style.opacity = '0';
+                setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
+            }, (error) => {
+                console.error("Erro ao carregar dados:", error);
+            });
+        }
+
+        function updateDashboard() {
+            const today = new Date().toISOString().split('T')[0];
+            const currentWeekId = getWeekId(today);
+            
+            // Filtrar transações APENAS da semana atual (Dom -> Sab)
+            const currentTransactions = transactions.filter(t => getWeekId(t.date) === currentWeekId);
+            
+            // Cálculos
+            let income = 0;
+            let expense = 0;
+
+            const listEl = document.getElementById('transaction-list');
+            listEl.innerHTML = '';
+
+            if(currentTransactions.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center py-10 opacity-50 flex flex-col items-center">
+                        <i data-lucide="calendar-x" class="mb-2 text-slate-300" width="48"></i>
+                        <p class="text-sm text-slate-500">Nenhuma movimentação nesta semana.</p>
+                    </div>`;
+            }
+
+            currentTransactions.forEach(t => {
+                if(t.type === 'income') income += t.amount;
+                else expense += t.amount;
+
+                // Criar HTML da transação
+                const item = document.createElement('div');
+                item.className = "bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex justify-between items-center group";
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 rounded-lg ${t.type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-500'}">
+                            <i data-lucide="${t.type === 'income' ? 'trending-up' : 'shopping-cart'}" width="18"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-800 text-sm">${t.description}</p>
+                            <p class="text-xs text-slate-400">${formatDateBR(t.date)} • ${t.category}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-bold text-sm block ${t.type === 'income' ? 'text-emerald-600' : 'text-red-500'}">
+                            ${t.type === 'income' ? '+' : '-'}${formatMoney(t.amount)}
+                        </span>
+                        <button onclick="window.deleteItem('${t.id}')" class="text-xs text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">Apagar</button>
+                    </div>
+                `;
+                listEl.appendChild(item);
+            });
+
+            // Atualizar Card Principal
+            document.getElementById('display-income').textContent = formatMoney(income);
+            document.getElementById('display-expense').textContent = formatMoney(expense);
+            
+            const balance = income - expense;
+            const balanceEl = document.getElementById('display-balance');
+            balanceEl.textContent = formatMoney(balance);
+            balanceEl.className = `text-4xl font-extrabold mt-2 ${balance >= 0 ? 'text-emerald-600' : 'text-red-500'}`;
+            
+            lucide.createIcons();
+        }
+
+        function updateHistory() {
+            const listEl = document.getElementById('history-list');
+            listEl.innerHTML = '';
+            
+            // Agrupar por semanas
+            const weeks = {};
+            transactions.forEach(t => {
+                const wId = getWeekId(t.date);
+                if(!weeks[wId]) {
+                    const range = getWeekRange(t.date);
+                    weeks[wId] = {
+                        id: wId,
+                        start: range.start,
+                        end: range.end,
+                        income: 0,
+                        expense: 0,
+                        count: 0
+                    };
+                }
+                if(t.type === 'income') weeks[wId].income += t.amount;
+                else weeks[wId].expense += t.amount;
+                weeks[wId].count++;
+            });
+
+            // Ordenar semanas (mais novas primeiro)
+            const sortedWeeks = Object.values(weeks).sort((a, b) => b.start - a.start);
+
+            if(sortedWeeks.length === 0) {
+                listEl.innerHTML = '<p class="text-center text-slate-400 mt-10">Nenhum histórico disponível.</p>';
+                return;
+            }
+
+            sortedWeeks.forEach(w => {
+                const balance = w.income - w.expense;
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden";
+                card.innerHTML = `
+                    <div class="bg-slate-50 px-5 py-3 border-b border-slate-100 flex justify-between items-center">
+                        <div>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Semana</span>
+                            <h4 class="font-bold text-slate-700 text-sm">
+                                ${formatDateBR(w.start.toISOString().split('T')[0])} até ${formatDateBR(w.end.toISOString().split('T')[0])}
+                            </h4>
+                        </div>
+                        <div class="text-right ${balance >= 0 ? 'text-emerald-600' : 'text-red-500'}">
+                            <span class="text-[10px] font-bold opacity-70 block uppercase">Saldo Final</span>
+                            <span class="font-bold">${formatMoney(balance)}</span>
+                        </div>
+                    </div>
+                    <div class="p-4 grid grid-cols-2 gap-4">
+                        <div class="text-center">
+                            <span class="text-xs text-slate-400 font-bold block mb-1">Entrou</span>
+                            <span class="text-sm font-bold text-emerald-600">${formatMoney(w.income)}</span>
+                        </div>
+                        <div class="text-center border-l border-slate-100">
+                            <span class="text-xs text-slate-400 font-bold block mb-1">Saiu</span>
+                            <span class="text-sm font-bold text-red-500">${formatMoney(w.expense)}</span>
+                        </div>
+                    </div>
+                `;
+                listEl.appendChild(card);
+            });
+        }
+
+        // --- Manipulação da UI (Global para acesso no HTML) ---
+        
+        window.showScreen = (screenId) => {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.openAddScreen = (type) => {
+            const form = document.getElementById('transaction-form');
+            form.reset();
+            
+            // Configurar Data Hoje
+            document.getElementById('form-date').value = new Date().toISOString().split('T')[0];
+            
+            const titleEl = document.getElementById('form-title');
+            const btnEl = document.getElementById('btn-save');
+            const catEl = document.getElementById('form-cat');
+            document.getElementById('form-type').value = type;
+
+            catEl.innerHTML = '<option value="Outros">Outros</option>';
+            
+            if (type === 'income') {
+                titleEl.textContent = 'Adicionar Ganho';
+                titleEl.className = "font-bold text-xl text-emerald-600";
+                btnEl.className = "w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-emerald-700 active:scale-95 transition-all mt-4";
+                btnEl.textContent = "Confirmar Recebimento";
+                
+                ['Salário Semanal', 'Extra', 'Presente'].forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c; opt.innerText = c;
+                    catEl.appendChild(opt);
+                });
+            } else {
+                titleEl.textContent = 'Adicionar Gasto';
+                titleEl.className = "font-bold text-xl text-red-600";
+                btnEl.className = "w-full bg-red-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-red-700 active:scale-95 transition-all mt-4";
+                btnEl.textContent = "Confirmar Gasto";
+
+                ['Alimentação', 'Transporte', 'Lazer', 'Contas', 'Casa'].forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c; opt.innerText = c;
+                    catEl.appendChild(opt);
+                });
+            }
+
+            window.showScreen('screen-add');
+        };
+
+        window.deleteItem = async (id) => {
+            if(confirm('Tem certeza que deseja apagar este item?')) {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions', id));
+                } catch (e) {
+                    alert('Erro ao apagar');
+                }
+            }
+        };
+
+        // --- Submissão do Formulário ---
+        document.getElementById('transaction-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const type = document.getElementById('form-type').value;
+            const amount = parseFloat(document.getElementById('form-amount').value);
+            const desc = document.getElementById('form-desc').value;
+            const category = document.getElementById('form-cat').value;
+            const date = document.getElementById('form-date').value;
+
+            if(!amount || !desc || !date) return;
+
+            const btn = document.getElementById('btn-save');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = "Salvando...";
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions'), {
+                    type,
+                    amount,
+                    description: desc,
+                    category,
+                    date,
+                    createdAt: new Date().toISOString()
+                });
+                
+                // Sucesso
+                window.showScreen('screen-dashboard');
+            } catch (error) {
+                console.error(error);
+                alert("Erro ao salvar. Tente novamente.");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        });
+        
+        // Inicializar ícones
+        lucide.createIcons();
+    </script>
+</body>
+</html>

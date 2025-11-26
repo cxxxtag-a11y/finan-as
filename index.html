@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FinançasPro V5 - Mês a Mês</title>
+    <title>FinançasPro V6 - Corrigido</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script>window.process = { env: { NODE_ENV: 'production' } };</script>
@@ -34,7 +34,7 @@
     
     <div id="loader">
         <div class="spinner"></div>
-        <p class="mt-4 text-emerald-500 font-medium">Carregando sistema...</p>
+        <p class="mt-4 text-emerald-500 font-medium">Atualizando sistema...</p>
     </div>
     <div id="root"></div>
 
@@ -54,7 +54,6 @@
         const formatDate = (date) => { if(!date) return ''; const d = new Date(date+'T00:00:00'); return new Intl.DateTimeFormat('pt-BR').format(d); };
         const getMonthName = (m) => { if(!m) return ''; const [y, mo] = m.split('-'); return new Date(y, mo-1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' }); };
 
-        // DADOS PADRÃO
         const INITIAL_CATS = ['Alimentação', 'Moradia', 'Transporte', 'Saúde', 'Lazer', 'Educação', 'Salário', 'Investimento', 'Contas Fixas', 'Extra'];
 
         const Card = ({ title, value, icon: Icon, type }) => {
@@ -84,10 +83,10 @@
             );
         };
 
-        function FinanceAppV5() {
+        function FinanceAppV6() {
             const [activeTab, setActiveTab] = useState('dashboard');
             
-            // DADOS (V5)
+            // DADOS (V5 para manter compatibilidade, mas com correções)
             const [initialBalance, setInitialBalance] = useState(() => parseFloat(localStorage.getItem('initialBalance_v5')) || 0);
             const [transactions, setTransactions] = useState(() => JSON.parse(localStorage.getItem('transactions_v5')) || []);
             const [fixedBills, setFixedBills] = useState(() => JSON.parse(localStorage.getItem('fixedBills_v5')) || []);
@@ -102,7 +101,8 @@
 
             // FORMS
             const [txForm, setTxForm] = useState({});
-            const [fixedForm, setFixedForm] = useState({});
+            // Correção: Inicializar com categoria padrão para não dar undefined
+            const [fixedForm, setFixedForm] = useState({ category: 'Contas Fixas' });
             const [newCategory, setNewCategory] = useState('');
             const fileInputRef = useRef(null);
 
@@ -114,15 +114,13 @@
                 localStorage.setItem('initialBalance_v5', initialBalance);
             }, [transactions, fixedBills, categories, initialBalance]);
 
-            // CÁLCULOS GERAIS
-            const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+            const currentMonth = new Date().toISOString().slice(0, 7);
             
-            // Saldo Total (Acumulado da vida toda)
+            // Cálculos
             const totalAccumulatedIncome = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.value, 0);
             const totalAccumulatedExpense = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.value, 0);
             const currentBalance = initialBalance + totalAccumulatedIncome - totalAccumulatedExpense;
 
-            // Dados Apenas do Mês Atual (Para o Dashboard)
             const monthTransactions = transactions.filter(t => t.date.startsWith(currentMonth));
             const monthIncome = monthTransactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.value, 0);
             const monthExpense = monthTransactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.value, 0);
@@ -145,27 +143,42 @@
 
             const handleSaveFixed = (e) => {
                 e.preventDefault();
-                const newBill = { id: Date.now(), ...fixedForm, value: parseFloat(fixedForm.value), lastPaidMonth: null };
+                // Correção: Garantir que a categoria existe
+                const cat = fixedForm.category || 'Contas Fixas';
+                const newBill = { id: Date.now(), ...fixedForm, value: parseFloat(fixedForm.value), category: cat, lastPaidMonth: null };
                 setFixedBills([...fixedBills, newBill]);
                 setIsFixedModalOpen(false);
                 setFixedForm({ name: '', value: '', dueDay: '', category: 'Contas Fixas' });
             };
             const deleteFixed = (id) => setFixedBills(fixedBills.filter(b => b.id !== id));
+            
             const payFixed = (bill) => {
                 const today = new Date().toISOString().slice(0,10);
-                const newTx = { id: Date.now(), description: `Pgto. ${bill.name}`, value: bill.value, type: 'expense', category: bill.category, date: today, method: 'Conta Fixa' };
+                // Correção: Fallback para evitar "undefined" se a conta foi criada na versão bugada
+                const cat = bill.category || 'Contas Fixas';
+                const desc = `Pgto. ${bill.name}`; 
+                
+                const newTx = { id: Date.now(), description: desc, value: bill.value, type: 'expense', category: cat, date: today, method: 'Conta Fixa' };
                 setTransactions([newTx, ...transactions]);
                 setFixedBills(fixedBills.map(b => b.id === bill.id ? { ...b, lastPaidMonth: currentMonth } : b));
             };
 
-            // BACKUP
+            // CORREÇÃO BACKUP: Método robusto para mobile
             const handleExport = () => {
-                const blob = new Blob([JSON.stringify({ initialBalance, transactions, fixedBills, categories, v: '5' })], { type: 'application/json' });
+                const data = JSON.stringify({ initialBalance, transactions, fixedBills, categories, v: '6' });
+                const blob = new Blob([data], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                // Cria elemento no DOM (Essencial para Safari/Mobile)
                 const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
+                link.href = url;
                 link.download = `backup_financas_${new Date().toISOString().slice(0,10)}.json`;
-                link.click();
+                document.body.appendChild(link); // Anexa
+                link.click(); // Clica
+                document.body.removeChild(link); // Remove
+                URL.revokeObjectURL(url); // Limpa memória
             };
+
             const handleImport = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -178,10 +191,10 @@
                             setTransactions(d.transactions || []);
                             setFixedBills(d.fixedBills || []);
                             setCategories(d.categories || INITIAL_CATS);
-                            alert('Importado!');
+                            alert('Dados restaurados com sucesso!');
                             setIsConfigModalOpen(false);
                         }
-                    } catch { alert('Erro no arquivo.'); }
+                    } catch { alert('Erro ao ler arquivo.'); }
                 };
                 r.readAsText(file);
                 e.target.value = null;
@@ -193,12 +206,12 @@
                     const g = {};
                     monthTransactions.filter(t => t.type === 'expense').forEach(t => g[t.category] = (g[t.category] || 0) + t.value);
                     return Object.keys(g).map(k => ({ name: k, value: g[k] })).sort((a,b) => b.value - a.value);
-                }, [transactions]); // Dependência atualizada
+                }, [transactions]);
 
                 return (
                     <div className="space-y-6 pb-24 lg:pb-0 animate-in fade-in">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <Card title="Saldo Atual (Acumulado)" value={formatCurrency(currentBalance)} icon={Wallet} type={currentBalance >= 0 ? 'default' : 'expense'} />
+                            <Card title="Saldo Atual (Geral)" value={formatCurrency(currentBalance)} icon={Wallet} type={currentBalance >= 0 ? 'default' : 'expense'} />
                             <Card title={`Entradas (${getMonthName(currentMonth)})`} value={formatCurrency(monthIncome)} icon={ArrowUpCircle} type="income" />
                             <Card title={`Saídas (${getMonthName(currentMonth)})`} value={formatCurrency(monthExpense)} icon={ArrowDownCircle} type="expense" />
                         </div>
@@ -316,7 +329,7 @@
                                     {isPaid && <div className="absolute top-0 right-0 bg-emerald-500 text-black text-[10px] font-bold px-2 py-1 rounded-bl-lg">PAGO</div>}
                                     <div className="flex justify-between mb-2"><Calendar className="text-zinc-600"/><button onClick={()=>deleteFixed(b.id)} className="text-zinc-600 hover:text-red-500"><Trash2 size={16}/></button></div>
                                     <h3 className="font-bold text-white">{b.name}</h3>
-                                    <p className="text-zinc-400 text-xs mb-3">Dia {b.dueDay}</p>
+                                    <p className="text-zinc-400 text-xs mb-3">Dia {b.dueDay} • {b.category || 'Geral'}</p>
                                     <div className="flex justify-between items-center pt-2 border-t border-zinc-800">
                                         <span className="text-emerald-500 font-bold">{formatCurrency(b.value)}</span>
                                         {!isPaid ? <button onClick={()=>payFixed(b)} className="bg-zinc-100 text-black px-3 py-1 rounded text-xs font-bold">Pagar</button> : <span className="text-emerald-500 text-xs flex gap-1"><CheckCircle size={14}/> Pago</span>}
@@ -413,7 +426,10 @@
                             <form onSubmit={handleSaveFixed} className="space-y-4">
                                 <input type="text" required placeholder="Nome (Ex: Aluguel)" className="w-full bg-zinc-900 border border-zinc-700 p-2 rounded text-white outline-none" value={fixedForm.name||''} onChange={e=>setFixedForm({...fixedForm, name:e.target.value})} />
                                 <input type="number" step="0.01" required placeholder="Valor" className="w-full bg-zinc-900 border border-zinc-700 p-2 rounded text-white outline-none" value={fixedForm.value||''} onChange={e=>setFixedForm({...fixedForm, value:e.target.value})} />
-                                <input type="number" required placeholder="Dia Vencimento" className="w-full bg-zinc-900 border border-zinc-700 p-2 rounded text-white outline-none" value={fixedForm.dueDay||''} onChange={e=>setFixedForm({...fixedForm, dueDay:e.target.value})} />
+                                <div className="grid grid-cols-2 gap-2">
+                                    <input type="number" required placeholder="Dia Vencimento" className="w-full bg-zinc-900 border border-zinc-700 p-2 rounded text-white outline-none" value={fixedForm.dueDay||''} onChange={e=>setFixedForm({...fixedForm, dueDay:e.target.value})} />
+                                    <select className="bg-zinc-900 border border-zinc-700 p-2 rounded text-white outline-none" value={fixedForm.category||'Contas Fixas'} onChange={e=>setFixedForm({...fixedForm, category:e.target.value})}>{categories.map(c=><option key={c} value={c}>{c}</option>)}</select>
+                                </div>
                                 <button type="submit" className="w-full bg-emerald-600 p-3 rounded font-bold text-white">Cadastrar</button>
                             </form>
                         </Modal>
@@ -438,7 +454,7 @@
         }
 
         const root = createRoot(document.getElementById('root'));
-        root.render(<FinanceAppV5 />);
+        root.render(<FinanceAppV6 />);
     </script>
 </body>
 </html>

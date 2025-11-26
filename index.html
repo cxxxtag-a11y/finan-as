@@ -2,17 +2,23 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>FinançasPro - Sistema Financeiro</title>
     
-    <!-- 1. Carregar Tailwind CSS (Estilos) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 2. Carregar React e Bibliotecas via CDN (Import Map) -->
+    <!-- CORREÇÃO 1: Variável de ambiente para evitar erro de processo -->
+    <script>
+        window.process = { env: { NODE_ENV: 'production' } };
+    </script>
+
+    <!-- CORREÇÃO 2: Import Map Completo (Adicionado react-dom explícito) -->
     <script type="importmap">
     {
         "imports": {
             "react": "https://esm.sh/react@18.2.0",
+            "react-dom": "https://esm.sh/react-dom@18.2.0",
             "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
             "recharts": "https://esm.sh/recharts@2.12.2?external=react,react-dom",
             "lucide-react": "https://esm.sh/lucide-react@0.344.0?external=react,react-dom"
@@ -20,22 +26,52 @@
     }
     </script>
 
-    <!-- 3. Carregar Babel para traduzir o código React no navegador -->
+    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-        /* Ajustes de rolagem e fundo */
-        body { background-color: #09090b; color: #f4f4f5; }
-        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        body { background-color: #09090b; color: #f4f4f5; -webkit-tap-highlight-color: transparent; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #18181b; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #10b981; border-radius: 4px; }
+        
+        /* Loading Spinner */
+        #loader { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #09090b; z-index: 50; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #10b981; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
+    
+    <!-- Tela de Carregamento / Erro -->
+    <div id="loader">
+        <div class="spinner"></div>
+        <p class="mt-4 text-emerald-500 font-medium">Carregando sistema...</p>
+        <div id="error-msg" class="hidden mt-4 p-4 bg-red-900/50 text-red-200 text-sm max-w-md text-center rounded-lg border border-red-800 break-words"></div>
+    </div>
+
     <div id="root"></div>
 
-    <!-- 4. O Código da Aplicação -->
+    <!-- Script de Captura de Erros -->
+    <script>
+        window.onerror = function(msg, url, line, col, error) {
+            const loader = document.getElementById('loader');
+            const spinner = document.querySelector('.spinner');
+            const errorMsg = document.getElementById('error-msg');
+            const loadingText = document.querySelector('p.text-emerald-500');
+            
+            if(spinner) spinner.style.display = 'none';
+            if(loadingText) loadingText.style.display = 'none';
+            
+            errorMsg.classList.remove('hidden');
+            // Mostra o erro de forma mais amigável
+            errorMsg.innerHTML = `<strong>Ops! Algo deu errado:</strong><br/>${msg}`;
+            
+            return false;
+        };
+    </script>
+
+    <!-- Aplicação React -->
     <script type="text/babel" data-type="module">
         import React, { useState, useEffect, useMemo, useRef } from 'react';
         import { createRoot } from 'react-dom/client';
@@ -47,6 +83,15 @@
             Calendar, CheckCircle, TrendingUp, DollarSign, FileText, 
             Settings, Menu, X, Download, Upload, Save
         } from 'lucide-react';
+
+        // Remove o loader assim que o React começar a rodar
+        function AppLoader({ children }) {
+            useEffect(() => {
+                const loader = document.getElementById('loader');
+                if(loader) loader.style.display = 'none';
+            }, []);
+            return children;
+        }
 
         // --- CONFIGURAÇÃO E UTILITÁRIOS ---
 
@@ -77,7 +122,7 @@
             const colorClass = type === 'income' ? 'text-emerald-500' : type === 'expense' ? 'text-red-500' : 'text-emerald-400';
             
             return (
-                <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-lg hover:border-emerald-500/30 transition-all duration-300">
+                <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-lg transition-all duration-300">
                 <div className="flex justify-between items-start mb-4">
                     <div>
                     <p className="text-zinc-400 text-sm font-medium">{title}</p>
@@ -96,14 +141,14 @@
             if (!isOpen) return null;
             return (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                <div className="bg-zinc-900 border border-zinc-800 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-                    <div className="flex justify-between items-center p-4 border-b border-zinc-800 bg-zinc-950">
+                <div className="bg-zinc-900 border border-zinc-800 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+                    <div className="flex justify-between items-center p-4 border-b border-zinc-800 bg-zinc-950 shrink-0">
                     <h3 className="text-lg font-semibold text-emerald-500">{title}</h3>
                     <button onClick={onClose} className="text-zinc-400 hover:text-white transition-colors">
                         <X size={20} />
                     </button>
                     </div>
-                    <div className="p-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                    <div className="p-6 overflow-y-auto custom-scrollbar grow">
                     {children}
                     </div>
                 </div>
@@ -140,10 +185,14 @@
 
             // --- PERSISTÊNCIA AUTOMÁTICA ---
             useEffect(() => {
-                localStorage.setItem('transactions_v3', JSON.stringify(transactions));
-                localStorage.setItem('fixedBills_v3', JSON.stringify(fixedBills));
-                localStorage.setItem('categories_v3', JSON.stringify(categories));
-                localStorage.setItem('initialBalance_v3', initialBalance);
+                try {
+                    localStorage.setItem('transactions_v3', JSON.stringify(transactions));
+                    localStorage.setItem('fixedBills_v3', JSON.stringify(fixedBills));
+                    localStorage.setItem('categories_v3', JSON.stringify(categories));
+                    localStorage.setItem('initialBalance_v3', initialBalance);
+                } catch(e) {
+                    console.error("Erro ao salvar no localStorage", e);
+                }
             }, [transactions, fixedBills, categories, initialBalance]);
 
             // Cálculos
@@ -303,7 +352,7 @@
                 }, [transactions, initialBalance]);
 
                 return (
-                <div className="space-y-6 animate-in fade-in duration-500">
+                <div className="space-y-6 animate-in fade-in duration-500 pb-20 lg:pb-0">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Card title="Saldo Atual" value={formatCurrency(currentBalance)} icon={Wallet} type={currentBalance >= 0 ? 'default' : 'expense'} subtitle="Disponível para uso" />
                     <Card title="Entradas (Total)" value={formatCurrency(totalIncome)} icon={ArrowUpCircle} type="income" subtitle="Acumulado" />
@@ -320,7 +369,7 @@
                             O sistema salva automaticamente tudo o que você fizer.
                             <br/>Adicione uma movimentação para começar.
                         </p>
-                        <button onClick={() => openTxModal()} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg font-medium shadow-lg shadow-emerald-900/20 transition-all hover:scale-105">
+                        <button onClick={() => openTxModal()} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg font-medium shadow-lg shadow-emerald-900/20 transition-all hover:scale-105 active:scale-95">
                             Adicionar Primeira Movimentação
                         </button>
                     </div>
@@ -370,11 +419,11 @@
 
             const FixedBillsView = () => {
                 return (
-                <div className="space-y-6">
+                <div className="space-y-6 pb-20 lg:pb-0">
                     <div className="flex justify-between items-center">
                         <h2 className="text-2xl font-bold text-emerald-500">Contas Fixas</h2>
-                        <button onClick={() => setIsFixedModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-emerald-900/20">
-                            <Plus size={18} /> Cadastrar Conta
+                        <button onClick={() => setIsFixedModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-emerald-900/20 active:scale-95 transition-transform">
+                            <Plus size={18} /> <span className="hidden md:inline">Cadastrar Conta</span><span className="md:hidden">Conta</span>
                         </button>
                     </div>
                     
@@ -401,7 +450,7 @@
                                 <div className="flex justify-between items-center mt-4 pt-4 border-t border-zinc-800">
                                 <span className="text-2xl font-semibold text-emerald-500">{formatCurrency(bill.value)}</span>
                                 {!isPaid ? (
-                                    <button onClick={() => payFixedBill(bill)} className="bg-zinc-100 hover:bg-white text-black px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-lg shadow-white/10">Pagar</button>
+                                    <button onClick={() => payFixedBill(bill)} className="bg-zinc-100 hover:bg-white text-black px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-lg shadow-white/10 active:scale-95">Pagar</button>
                                 ) : (
                                     <span className="text-emerald-500 flex items-center gap-1 text-sm font-medium"><CheckCircle size={16} /> Pago</span>
                                 )}
@@ -417,10 +466,10 @@
 
             const TransactionsView = () => {
                 return (
-                <div className="space-y-6">
+                <div className="space-y-6 pb-20 lg:pb-0">
                     <div className="flex justify-between items-center">
                     <h2 className="text-2xl font-bold text-emerald-500">Movimentações</h2>
-                    <button onClick={() => openTxModal()} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <button onClick={() => openTxModal()} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 active:scale-95 transition-transform">
                         <Plus size={18} /> Nova
                     </button>
                     </div>
@@ -430,8 +479,8 @@
                         <thead className="bg-zinc-950 border-b border-zinc-800">
                             <tr>
                             <th className="p-4 text-zinc-400 text-sm">Descrição</th>
-                            <th className="p-4 text-zinc-400 text-sm">Cat.</th>
-                            <th className="p-4 text-zinc-400 text-sm">Data</th>
+                            <th className="p-4 text-zinc-400 text-sm hidden md:table-cell">Cat.</th>
+                            <th className="p-4 text-zinc-400 text-sm hidden md:table-cell">Data</th>
                             <th className="p-4 text-zinc-400 text-sm">Valor</th>
                             <th className="p-4 text-right"></th>
                             </tr>
@@ -439,14 +488,17 @@
                         <tbody className="divide-y divide-zinc-800">
                             {transactions.sort((a,b) => new Date(b.date) - new Date(a.date)).map(tx => (
                             <tr key={tx.id} className="hover:bg-zinc-800/30">
-                                <td className="p-4 font-medium text-zinc-200">{tx.description}</td>
-                                <td className="p-4 text-zinc-400 text-sm"><span className="px-2 py-1 bg-zinc-800 rounded text-xs">{tx.category}</span></td>
-                                <td className="p-4 text-zinc-400 text-sm">{formatDate(tx.date)}</td>
+                                <td className="p-4">
+                                    <div className="font-medium text-zinc-200">{tx.description}</div>
+                                    <div className="md:hidden text-xs text-zinc-500 mt-1">{formatDate(tx.date)} • {tx.category}</div>
+                                </td>
+                                <td className="p-4 text-zinc-400 text-sm hidden md:table-cell"><span className="px-2 py-1 bg-zinc-800 rounded text-xs">{tx.category}</span></td>
+                                <td className="p-4 text-zinc-400 text-sm hidden md:table-cell">{formatDate(tx.date)}</td>
                                 <td className={`p-4 font-semibold ${tx.type === 'income' ? 'text-emerald-500' : 'text-red-500'}`}>
                                 {tx.type === 'income' ? '+' : '-'} {formatCurrency(tx.value)}
                                 </td>
                                 <td className="p-4 text-right">
-                                    <button onClick={() => deleteTransaction(tx.id)} className="text-zinc-600 hover:text-red-500"><Trash2 size={16}/></button>
+                                    <button onClick={() => deleteTransaction(tx.id)} className="text-zinc-600 hover:text-red-500 p-2"><Trash2 size={16}/></button>
                                 </td>
                             </tr>
                             ))}
@@ -463,7 +515,7 @@
                 const expenses = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.value, 0);
                 const incomes = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.value, 0);
                 return (
-                    <div className="max-w-2xl mx-auto space-y-6">
+                    <div className="max-w-2xl mx-auto space-y-6 pb-20 lg:pb-0">
                         <h2 className="text-2xl font-bold text-emerald-500">Relatório Geral</h2>
                         <div className="bg-zinc-100 text-zinc-900 rounded-xl overflow-hidden shadow-xl">
                             <div className="p-8 bg-emerald-600 text-white">
@@ -500,121 +552,145 @@
             );
 
             return (
-                <div className="flex min-h-screen bg-zinc-950 text-zinc-100 font-sans">
-                {/* Sidebar */}
-                <aside className="hidden lg:flex w-72 flex-col p-6 border-r border-zinc-900 sticky top-0 h-screen">
-                    <div className="flex items-center gap-3 mb-10 px-2">
-                    <div className="bg-emerald-500 p-2 rounded-lg"><DollarSign size={24} className="text-black" /></div>
-                    <h1 className="text-xl font-bold">Finanças<span className="text-emerald-500">Pro</span></h1>
-                    </div>
-                    <nav className="space-y-2 flex-1">
-                    <NavItem id="dashboard" icon={LayoutDashboard} label="Dashboard" />
-                    <NavItem id="transactions" icon={FileText} label="Movimentações" />
-                    <NavItem id="fixed" icon={Calendar} label="Contas Fixas" />
-                    <NavItem id="reports" icon={TrendingUp} label="Relatórios" />
-                    </nav>
-                    <button onClick={() => setIsConfigModalOpen(true)} className="flex items-center gap-3 px-4 py-3 text-zinc-500 hover:text-emerald-500 mt-auto">
-                        <Settings size={20} /> <span>Configurações</span>
-                    </button>
-                </aside>
-
-                {/* Mobile Header */}
-                <div className="lg:hidden fixed top-0 w-full bg-zinc-950/90 backdrop-blur-md border-b border-zinc-900 z-40 px-4 py-3 flex justify-between items-center">
-                    <div className="flex items-center gap-2 font-bold"><DollarSign className="text-emerald-500"/> FinançasPro</div>
-                    <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-white">{isMobileMenuOpen ? <X /> : <Menu />}</button>
-                </div>
-
-                {isMobileMenuOpen && (
-                    <div className="fixed inset-0 bg-zinc-950 z-30 pt-20 px-6 lg:hidden">
-                        <nav className="space-y-4">
-                            <NavItem id="dashboard" icon={LayoutDashboard} label="Dashboard" />
-                            <NavItem id="transactions" icon={FileText} label="Movimentações" />
-                            <NavItem id="fixed" icon={Calendar} label="Contas Fixas" />
-                            <NavItem id="reports" icon={TrendingUp} label="Relatórios" />
-                            <button onClick={() => { setIsConfigModalOpen(true); setIsMobileMenuOpen(false); }} className="flex items-center gap-3 px-4 py-3 text-zinc-500 w-full">
-                                <Settings size={20} /> <span>Configurações</span>
-                            </button>
+                <AppLoader>
+                    <div className="flex min-h-screen bg-zinc-950 text-zinc-100 font-sans">
+                    {/* Sidebar Desktop */}
+                    <aside className="hidden lg:flex w-72 flex-col p-6 border-r border-zinc-900 sticky top-0 h-screen">
+                        <div className="flex items-center gap-3 mb-10 px-2">
+                        <div className="bg-emerald-500 p-2 rounded-lg"><DollarSign size={24} className="text-black" /></div>
+                        <h1 className="text-xl font-bold">Finanças<span className="text-emerald-500">Pro</span></h1>
+                        </div>
+                        <nav className="space-y-2 flex-1">
+                        <NavItem id="dashboard" icon={LayoutDashboard} label="Dashboard" />
+                        <NavItem id="transactions" icon={FileText} label="Movimentações" />
+                        <NavItem id="fixed" icon={Calendar} label="Contas Fixas" />
+                        <NavItem id="reports" icon={TrendingUp} label="Relatórios" />
                         </nav>
+                        <button onClick={() => setIsConfigModalOpen(true)} className="flex items-center gap-3 px-4 py-3 text-zinc-500 hover:text-emerald-500 mt-auto">
+                            <Settings size={20} /> <span>Configurações</span>
+                        </button>
+                    </aside>
+
+                    {/* Mobile Header */}
+                    <div className="lg:hidden fixed top-0 w-full bg-zinc-950/90 backdrop-blur-md border-b border-zinc-900 z-40 px-4 py-3 flex justify-between items-center shadow-lg">
+                        <div className="flex items-center gap-2 font-bold"><DollarSign className="text-emerald-500"/> FinançasPro</div>
+                        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-white p-2">{isMobileMenuOpen ? <X /> : <Menu />}</button>
                     </div>
-                )}
 
-                {/* Main Content */}
-                <main className="flex-1 p-4 lg:p-10 mt-14 lg:mt-0 overflow-x-hidden">
-                    {activeTab === 'dashboard' && <DashboardView />}
-                    {activeTab === 'transactions' && <TransactionsView />}
-                    {activeTab === 'fixed' && <FixedBillsView />}
-                    {activeTab === 'reports' && <ReportsView />}
-                </main>
+                    {isMobileMenuOpen && (
+                        <div className="fixed inset-0 bg-zinc-950 z-30 pt-20 px-6 lg:hidden animate-in slide-in-from-top-10 fade-in duration-200">
+                            <nav className="space-y-4">
+                                <NavItem id="dashboard" icon={LayoutDashboard} label="Dashboard" />
+                                <NavItem id="transactions" icon={FileText} label="Movimentações" />
+                                <NavItem id="fixed" icon={Calendar} label="Contas Fixas" />
+                                <NavItem id="reports" icon={TrendingUp} label="Relatórios" />
+                                <button onClick={() => { setIsConfigModalOpen(true); setIsMobileMenuOpen(false); }} className="flex items-center gap-3 px-4 py-3 text-zinc-500 w-full">
+                                    <Settings size={20} /> <span>Configurações</span>
+                                </button>
+                            </nav>
+                        </div>
+                    )}
 
-                {/* --- MODAIS --- */}
+                    {/* Main Content */}
+                    <main className="flex-1 p-4 lg:p-10 mt-14 lg:mt-0 overflow-x-hidden">
+                        {activeTab === 'dashboard' && <DashboardView />}
+                        {activeTab === 'transactions' && <TransactionsView />}
+                        {activeTab === 'fixed' && <FixedBillsView />}
+                        {activeTab === 'reports' && <ReportsView />}
+                    </main>
 
-                <Modal isOpen={isTxModalOpen} onClose={closeTxModal} title={editingTx ? "Editar Movimentação" : "Nova Movimentação"}>
-                    <form onSubmit={handleAddTransaction} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-2">
-                        <button type="button" onClick={() => setTxForm({...txForm, type: 'income'})} className={`p-2 rounded-lg border text-sm font-medium ${txForm.type === 'income' ? 'bg-emerald-500 text-black border-emerald-500' : 'bg-zinc-950 border-zinc-700 text-zinc-400'}`}>Entrada</button>
-                        <button type="button" onClick={() => setTxForm({...txForm, type: 'expense'})} className={`p-2 rounded-lg border text-sm font-medium ${txForm.type === 'expense' ? 'bg-red-500 text-white border-red-500' : 'bg-zinc-950 border-zinc-700 text-zinc-400'}`}>Saída</button>
-                    </div>
-                    <input type="number" step="0.01" required className="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white mt-1" placeholder="Valor" value={txForm.value} onChange={(e) => setTxForm({...txForm, value: e.target.value})} />
-                    <input type="text" required className="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white mt-1" placeholder="Descrição" value={txForm.description} onChange={(e) => setTxForm({...txForm, description: e.target.value})} />
-                    <div className="grid grid-cols-2 gap-4">
-                        <select className="bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white" value={txForm.category} onChange={(e) => setTxForm({...txForm, category: e.target.value})}>
-                            {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                        <input type="date" required className="bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white" value={txForm.date} onChange={(e) => setTxForm({...txForm, date: e.target.value})} />
-                    </div>
-                    <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg mt-4">Salvar</button>
-                    </form>
-                </Modal>
+                    {/* --- MODAIS --- */}
 
-                <Modal isOpen={isFixedModalOpen} onClose={() => setIsFixedModalOpen(false)} title="Nova Conta Fixa">
-                    <form onSubmit={handleAddFixedBill} className="space-y-4">
-                        <input type="text" required className="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white" placeholder="Nome (Ex: Aluguel)" value={fixedForm.name} onChange={(e) => setFixedForm({...fixedForm, name: e.target.value})} />
-                        <input type="number" step="0.01" required className="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white" placeholder="Valor" value={fixedForm.value} onChange={(e) => setFixedForm({...fixedForm, value: e.target.value})} />
-                        <input type="number" min="1" max="31" required className="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white" placeholder="Dia Vencimento" value={fixedForm.dueDay} onChange={(e) => setFixedForm({...fixedForm, dueDay: e.target.value})} />
-                        <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg mt-4">Cadastrar</button>
-                    </form>
-                </Modal>
-
-                <Modal isOpen={isConfigModalOpen} onClose={() => setIsConfigModalOpen(false)} title="Configurações">
-                    <div className="space-y-6">
-                        <div>
-                            <h4 className="text-white font-medium mb-1">Saldo Inicial</h4>
-                            <input type="number" value={initialBalance} onChange={(e) => setInitialBalance(parseFloat(e.target.value) || 0)} className="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white" />
+                    <Modal isOpen={isTxModalOpen} onClose={closeTxModal} title={editingTx ? "Editar Movimentação" : "Nova Movimentação"}>
+                        <form onSubmit={handleAddTransaction} className="space-y-4">
+                        <div className="grid grid-cols-2 gap-2">
+                            <button type="button" onClick={() => setTxForm({...txForm, type: 'income'})} className={`p-2 rounded-lg border text-sm font-medium transition-colors ${txForm.type === 'income' ? 'bg-emerald-500 text-black border-emerald-500' : 'bg-zinc-950 border-zinc-700 text-zinc-400'}`}>Entrada</button>
+                            <button type="button" onClick={() => setTxForm({...txForm, type: 'expense'})} className={`p-2 rounded-lg border text-sm font-medium transition-colors ${txForm.type === 'expense' ? 'bg-red-500 text-white border-red-500' : 'bg-zinc-950 border-zinc-700 text-zinc-400'}`}>Saída</button>
                         </div>
                         <div>
-                            <h4 className="text-white font-medium mb-2">Gerenciar Categorias</h4>
-                            <div className="flex gap-2">
-                                <input type="text" placeholder="Nova categoria..." value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className="flex-1 bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white text-sm" />
-                                <button onClick={() => { if(newCategory){ setCategories([...categories, newCategory]); setNewCategory(''); }}} className="bg-emerald-600 px-3 rounded-lg text-white"><Plus size={18} /></button>
+                            <label className="text-xs text-zinc-500">Valor</label>
+                            <input type="number" step="0.01" required className="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white mt-1" placeholder="R$ 0,00" value={txForm.value} onChange={(e) => setTxForm({...txForm, value: e.target.value})} />
+                        </div>
+                        <div>
+                            <label className="text-xs text-zinc-500">Descrição</label>
+                            <input type="text" required className="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white mt-1" placeholder="Ex: Supermercado" value={txForm.description} onChange={(e) => setTxForm({...txForm, description: e.target.value})} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-xs text-zinc-500">Categoria</label>
+                                <select className="bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white w-full mt-1" value={txForm.category} onChange={(e) => setTxForm({...txForm, category: e.target.value})}>
+                                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-xs text-zinc-500">Data</label>
+                                <input type="date" required className="bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white w-full mt-1" value={txForm.date} onChange={(e) => setTxForm({...txForm, date: e.target.value})} />
                             </div>
                         </div>
-                        
-                        <div className="pt-6 border-t border-zinc-800">
-                            <h4 className="text-white font-medium mb-3 flex items-center gap-2"><Save size={18}/> Backup e Segurança</h4>
-                            <p className="text-xs text-zinc-500 mb-4">Exporte seus dados para não perder se limpar o navegador.</p>
+                        <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg mt-4 active:scale-95 transition-transform">Salvar</button>
+                        </form>
+                    </Modal>
+
+                    <Modal isOpen={isFixedModalOpen} onClose={() => setIsFixedModalOpen(false)} title="Nova Conta Fixa">
+                        <form onSubmit={handleAddFixedBill} className="space-y-4">
+                            <div>
+                                <label className="text-xs text-zinc-500">Nome</label>
+                                <input type="text" required className="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white mt-1" placeholder="Ex: Aluguel" value={fixedForm.name} onChange={(e) => setFixedForm({...fixedForm, name: e.target.value})} />
+                            </div>
+                            <div>
+                                <label className="text-xs text-zinc-500">Valor</label>
+                                <input type="number" step="0.01" required className="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white mt-1" placeholder="R$ 0,00" value={fixedForm.value} onChange={(e) => setFixedForm({...fixedForm, value: e.target.value})} />
+                            </div>
+                            <div>
+                                <label className="text-xs text-zinc-500">Dia Vencimento</label>
+                                <input type="number" min="1" max="31" required className="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white mt-1" placeholder="Dia" value={fixedForm.dueDay} onChange={(e) => setFixedForm({...fixedForm, dueDay: e.target.value})} />
+                            </div>
+                            <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg mt-4 active:scale-95 transition-transform">Cadastrar</button>
+                        </form>
+                    </Modal>
+
+                    <Modal isOpen={isConfigModalOpen} onClose={() => setIsConfigModalOpen(false)} title="Configurações">
+                        <div className="space-y-6">
+                            <div>
+                                <h4 className="text-white font-medium mb-1">Saldo Inicial</h4>
+                                <input type="number" value={initialBalance} onChange={(e) => setInitialBalance(parseFloat(e.target.value) || 0)} className="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white" />
+                            </div>
+                            <div>
+                                <h4 className="text-white font-medium mb-2">Gerenciar Categorias</h4>
+                                <div className="flex gap-2">
+                                    <input type="text" placeholder="Nova categoria..." value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className="flex-1 bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white text-sm" />
+                                    <button onClick={() => { if(newCategory){ setCategories([...categories, newCategory]); setNewCategory(''); }}} className="bg-emerald-600 px-3 rounded-lg text-white"><Plus size={18} /></button>
+                                </div>
+                            </div>
                             
-                            <div className="grid grid-cols-2 gap-4">
-                                <button onClick={handleExportData} className="flex flex-col items-center justify-center p-4 bg-zinc-800 hover:bg-zinc-700 rounded-xl border border-zinc-700 transition-colors gap-2 text-emerald-500">
-                                    <Download size={24} />
-                                    <span className="text-sm font-bold">Baixar Dados</span>
-                                </button>
+                            <div className="pt-6 border-t border-zinc-800">
+                                <h4 className="text-white font-medium mb-3 flex items-center gap-2"><Save size={18}/> Backup e Segurança</h4>
+                                <p className="text-xs text-zinc-500 mb-4">Exporte seus dados para não perder se limpar o navegador.</p>
                                 
-                                <button onClick={() => fileInputRef.current.click()} className="flex flex-col items-center justify-center p-4 bg-zinc-800 hover:bg-zinc-700 rounded-xl border border-zinc-700 transition-colors gap-2 text-blue-400">
-                                    <Upload size={24} />
-                                    <span className="text-sm font-bold">Restaurar</span>
-                                    <input type="file" ref={fileInputRef} onChange={handleImportData} accept=".json" className="hidden" />
-                                </button>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button onClick={handleExportData} className="flex flex-col items-center justify-center p-4 bg-zinc-800 hover:bg-zinc-700 rounded-xl border border-zinc-700 transition-colors gap-2 text-emerald-500 active:scale-95">
+                                        <Download size={24} />
+                                        <span className="text-sm font-bold">Baixar Dados</span>
+                                    </button>
+                                    
+                                    <button onClick={() => fileInputRef.current.click()} className="flex flex-col items-center justify-center p-4 bg-zinc-800 hover:bg-zinc-700 rounded-xl border border-zinc-700 transition-colors gap-2 text-blue-400 active:scale-95">
+                                        <Upload size={24} />
+                                        <span className="text-sm font-bold">Restaurar</span>
+                                        <input type="file" ref={fileInputRef} onChange={handleImportData} accept=".json" className="hidden" />
+                                    </button>
+                                </div>
                             </div>
                         </div>
+                    </Modal>
                     </div>
-                </Modal>
-                </div>
+                </AppLoader>
             );
         }
 
-        // --- Renderização do App na DOM ---
         const root = createRoot(document.getElementById('root'));
         root.render(<FinanceAppFinal />);
     </script>
 </body>
 </html>
+
+

@@ -3,675 +3,618 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão Financeira</title>
+    <title>FinançasPro - Sistema Financeiro</title>
     
+    <!-- 1. Carregar Tailwind CSS (Estilos) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- 2. Carregar React e Bibliotecas via CDN (Import Map) -->
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.2.0",
+            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+            "recharts": "https://esm.sh/recharts@2.12.2?external=react,react-dom",
+            "lucide-react": "https://esm.sh/lucide-react@0.344.0?external=react,react-dom"
+        }
+    }
+    </script>
+
+    <!-- 3. Carregar Babel para traduzir o código React no navegador -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
-        
-        /* Utilitários de Animação */
-        .screen { display: none; opacity: 0; transition: opacity 0.3s ease; }
-        .screen.active { display: block; opacity: 1; }
-        .fade-enter { animation: fadeIn 0.3s forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Scrollbar suave */
-        .hide-scroll::-webkit-scrollbar { display: none; }
-        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* Accordion (Detalhes) */
-        .details-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
-        .details-open { max-height: 500px; }
+        /* Ajustes de rolagem e fundo */
+        body { background-color: #09090b; color: #f4f4f5; }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #18181b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
     </style>
 </head>
-<body class="text-slate-800 bg-slate-50">
+<body>
+    <div id="root"></div>
 
-    <!-- LOADING -->
-    <div id="loader" class="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center transition-opacity duration-500">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-indigo-600 mb-4"></div>
-        <p class="text-slate-500 text-sm font-medium animate-pulse">Organizando suas finanças...</p>
-    </div>
+    <!-- 4. O Código da Aplicação -->
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useMemo, useRef } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { 
+            PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
+        } from 'recharts';
+        import { 
+            LayoutDashboard, Wallet, ArrowUpCircle, ArrowDownCircle, Plus, Trash2, Edit2, 
+            Calendar, CheckCircle, TrendingUp, DollarSign, FileText, 
+            Settings, Menu, X, Download, Upload, Save
+        } from 'lucide-react';
 
-    <!-- APP CONTAINER -->
-    <div class="max-w-md mx-auto min-h-screen bg-white shadow-2xl relative pb-24">
+        // --- CONFIGURAÇÃO E UTILITÁRIOS ---
 
-        <!-- HEADER PRINCIPAL (Corrigido) -->
-        <header class="relative mb-28"> <!-- Aumentei a margem inferior para o conteúdo não colar no card -->
-            
-            <!-- Fundo Azul com Formato Redondo -->
-            <!-- Aumentei padding-bottom (pb-52) para o card branco descer e não cobrir o texto -->
-            <div class="bg-indigo-600 pb-52 pt-14 px-6 rounded-b-[3rem] shadow-lg relative z-10">
-                
-                <!-- Efeito de fundo (Bolhas) - Isolado para não vazar -->
-                <div class="absolute inset-0 rounded-b-[3rem] overflow-hidden pointer-events-none z-0">
-                    <div class="absolute right-0 top-0 w-64 h-64 bg-white rounded-full mix-blend-overlay filter blur-3xl transform translate-x-1/2 -translate-y-1/2 opacity-20"></div>
-                    <div class="absolute left-0 bottom-0 w-48 h-48 bg-indigo-400 rounded-full mix-blend-overlay filter blur-2xl transform -translate-x-1/2 translate-y-1/2 opacity-20"></div>
-                </div>
-
-                <!-- Conteúdo do Topo -->
-                <div class="relative z-20 flex justify-between items-start">
-                    <div>
-                        <h1 class="text-xs text-indigo-200 uppercase tracking-widest font-bold mb-1">Gestão Pessoal</h1>
-                        <h2 class="text-2xl font-bold text-white flex items-center gap-2">
-                            Olá, Lipe <i data-lucide="crown" width="20" class="text-yellow-400 fill-yellow-400"></i>
-                        </h2>
-                    </div>
-                    
-                    <!-- Box Reserva -->
-                    <div class="bg-indigo-700/60 p-2 pr-4 rounded-xl backdrop-blur-md flex items-center gap-3 border border-indigo-500/30 shadow-sm mt-1">
-                        <div class="bg-indigo-500 p-2 rounded-lg shadow-inner">
-                            <i data-lucide="piggy-bank" class="text-white" width="20"></i>
-                        </div>
-                        <div>
-                            <span class="text-[10px] text-indigo-200 uppercase font-bold block leading-tight">Reserva</span>
-                            <span id="display-reserve" class="font-bold text-sm text-white">R$ 0,00</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- CARD SALDO DISPONÍVEL (Flutuante) -->
-            <!-- Posicionado absolutamente em relação ao container header -->
-            <div class="absolute left-6 right-6 -bottom-20 z-30">
-                <div class="bg-white rounded-3xl shadow-xl p-6 text-center fade-enter border border-slate-100">
-                    <span class="text-slate-400 text-xs uppercase font-bold tracking-wider block mb-1">Disponível na Semana</span>
-                    <div id="display-balance" class="text-4xl font-extrabold text-slate-800 tracking-tight">R$ 0,00</div>
-                    
-                    <div class="grid grid-cols-2 mt-5 pt-4 border-t border-slate-50 divide-x divide-slate-50">
-                        <div class="px-2">
-                            <div class="flex items-center justify-center gap-1 text-emerald-600 text-[10px] font-bold uppercase mb-1">
-                                <i data-lucide="arrow-up" width="14"></i> Receita
-                            </div>
-                            <span id="display-income" class="font-bold text-slate-700 text-sm">R$ 0,00</span>
-                        </div>
-                        <div class="px-2">
-                            <div class="flex items-center justify-center gap-1 text-red-500 text-[10px] font-bold uppercase mb-1">
-                                <i data-lucide="arrow-down" width="14"></i> Despesa
-                            </div>
-                            <span id="display-expense" class="font-bold text-slate-700 text-sm">R$ 0,00</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <!-- CONTEÚDO -->
-        <main class="px-6 relative z-10 mt-8">
-            
-            <!-- TELA 1: DASHBOARD -->
-            <div id="screen-dashboard" class="screen active fade-enter">
-                
-                <!-- Ações Rápidas -->
-                <h3 class="font-bold text-slate-800 text-sm mb-3">Ações Rápidas</h3>
-                <div class="grid grid-cols-3 gap-3 mb-8">
-                    <button onclick="openAddScreen('income')" class="bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 p-3 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95 group">
-                        <div class="bg-emerald-500 text-white p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
-                            <i data-lucide="plus" width="22"></i>
-                        </div>
-                        <span class="text-emerald-900 font-bold text-xs">Receber</span>
-                    </button>
-                    
-                    <button onclick="openAddScreen('expense')" class="bg-red-50 hover:bg-red-100 border border-red-100 p-3 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95 group">
-                        <div class="bg-red-500 text-white p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
-                            <i data-lucide="minus" width="22"></i>
-                        </div>
-                        <span class="text-red-900 font-bold text-xs">Gastar</span>
-                    </button>
-
-                    <button onclick="openAddScreen('reserve')" class="bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 p-3 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95 group">
-                        <div class="bg-indigo-500 text-white p-3 rounded-xl shadow-md group-hover:scale-110 transition-transform">
-                            <i data-lucide="piggy-bank" width="22"></i>
-                        </div>
-                        <span class="text-indigo-900 font-bold text-xs">Guardar</span>
-                    </button>
-                </div>
-
-                <!-- Alerta de Contas Fixas -->
-                <div id="fixed-alert-container" class="hidden mb-6">
-                    <div onclick="showScreen('screen-fixed')" class="bg-orange-50 border border-orange-100 rounded-2xl p-4 flex items-center justify-between cursor-pointer active:bg-orange-100 shadow-sm">
-                        <div class="flex items-center gap-3">
-                            <div class="bg-orange-100 p-2 rounded-full text-orange-500">
-                                <i data-lucide="calendar-clock" width="20"></i>
-                            </div>
-                            <div>
-                                <p class="font-bold text-orange-900 text-sm">Contas Pendentes</p>
-                                <p class="text-xs text-orange-600 font-medium">Toque para ver e pagar</p>
-                            </div>
-                        </div>
-                        <i data-lucide="chevron-right" class="text-orange-300" width="20"></i>
-                    </div>
-                </div>
-
-                <!-- Lista Recente -->
-                <div class="flex justify-between items-end mb-4">
-                    <h3 class="font-bold text-slate-700 text-lg">Essa Semana</h3>
-                    <button onclick="showScreen('screen-history')" class="text-indigo-600 text-xs font-bold hover:underline">
-                        Ver Relatório Completo
-                    </button>
-                </div>
-
-                <div id="transaction-list" class="space-y-3 pb-8"></div>
-            </div>
-
-            <!-- TELA 2: FORMULÁRIO (Receber, Gastar, Guardar) -->
-            <div id="screen-add" class="screen bg-white">
-                <div class="flex items-center gap-3 mb-6">
-                    <button onclick="showScreen('screen-dashboard')" class="p-2 hover:bg-slate-100 rounded-full text-slate-500">
-                        <i data-lucide="arrow-left"></i>
-                    </button>
-                    <h3 id="form-title" class="font-bold text-xl text-slate-800">Adicionar</h3>
-                </div>
-
-                <form id="transaction-form" class="space-y-6">
-                    <input type="hidden" id="form-type">
-                    
-                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 text-center shadow-inner">
-                        <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Qual o valor?</label>
-                        <div class="flex items-center justify-center gap-1">
-                            <span class="text-2xl text-slate-400 font-bold">R$</span>
-                            <input type="number" id="form-amount" step="0.01" required placeholder="0,00" class="w-40 text-4xl font-extrabold text-slate-800 bg-transparent outline-none text-center placeholder-slate-200" autofocus>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Descrição</label>
-                        <input type="text" id="form-desc" required placeholder="Ex: Mercado, Salário..." class="w-full bg-slate-50 rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-indigo-500/20 border border-slate-200 focus:border-indigo-500 font-medium transition-all">
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Categoria</label>
-                            <div class="relative">
-                                <select id="form-cat" class="w-full bg-slate-50 rounded-xl px-4 py-4 outline-none border border-slate-200 focus:border-indigo-500 appearance-none font-medium text-slate-700 transition-all">
-                                    <!-- Options via JS -->
-                                </select>
-                                <i data-lucide="chevron-down" class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" width="16"></i>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Data</label>
-                            <input type="date" id="form-date" required class="w-full bg-slate-50 rounded-xl px-4 py-4 outline-none border border-slate-200 focus:border-indigo-500 font-medium text-slate-700 transition-all">
-                        </div>
-                    </div>
-
-                    <button type="submit" id="btn-save" class="w-full text-white font-bold py-4 rounded-xl shadow-xl hover:opacity-90 active:scale-95 transition-all text-lg flex justify-center items-center gap-2">
-                        <span>Confirmar</span> <i data-lucide="check" width="20"></i>
-                    </button>
-                </form>
-            </div>
-
-            <!-- TELA 3: GASTOS FIXOS -->
-            <div id="screen-fixed" class="screen">
-                <div class="flex items-center gap-3 mb-6">
-                    <button onclick="showScreen('screen-dashboard')" class="p-2 hover:bg-slate-100 rounded-full text-slate-500">
-                        <i data-lucide="arrow-left"></i>
-                    </button>
-                    <div>
-                        <h3 class="font-bold text-xl text-slate-800">Contas Fixas</h3>
-                        <p class="text-xs text-slate-500">Gerencie seus boletos mensais</p>
-                    </div>
-                </div>
-
-                <!-- Form rápido para adicionar conta fixa -->
-                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 mb-6 shadow-sm">
-                    <h4 class="font-bold text-indigo-900 text-sm mb-3 flex items-center gap-2">
-                        <i data-lucide="plus-circle" width="16"></i> Nova Conta Mensal
-                    </h4>
-                    <form id="fixed-form" class="flex flex-col gap-3">
-                        <input type="text" id="fix-name" placeholder="Nome (Ex: Internet)" class="p-3 rounded-lg text-sm border-none outline-none focus:ring-2 focus:ring-indigo-300 shadow-sm" required>
-                        <div class="flex gap-3">
-                            <input type="number" id="fix-val" placeholder="Valor" class="flex-1 p-3 rounded-lg text-sm border-none outline-none focus:ring-2 focus:ring-indigo-300 shadow-sm" required>
-                            <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold text-sm shadow-md hover:bg-indigo-700 active:scale-95 transition-all">Add</button>
-                        </div>
-                    </form>
-                </div>
-
-                <div id="fixed-list" class="space-y-3 pb-8">
-                    <!-- Lista de fixos -->
-                </div>
-            </div>
-
-            <!-- TELA 4: RELATÓRIO COMPLETO (Histórico) -->
-            <div id="screen-history" class="screen">
-                <div class="flex items-center gap-3 mb-6">
-                    <button onclick="showScreen('screen-dashboard')" class="p-2 hover:bg-slate-100 rounded-full text-slate-500">
-                        <i data-lucide="arrow-left"></i>
-                    </button>
-                    <div>
-                        <h3 class="font-bold text-xl text-slate-800">Relatório Completo</h3>
-                        <p class="text-xs text-slate-500">Toque na semana para ver detalhes</p>
-                    </div>
-                </div>
-                
-                <div id="history-list" class="space-y-4 pb-12">
-                    <!-- Lista de semanas -->
-                </div>
-            </div>
-
-        </main>
-
-        <!-- NAVEGAÇÃO MOBILE -->
-        <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 flex justify-between items-center z-50 md:hidden pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-            <button onclick="showScreen('screen-dashboard')" class="nav-btn flex flex-col items-center gap-1 text-indigo-600 transition-colors">
-                <i data-lucide="layout-grid" width="24"></i>
-                <span class="text-[10px] font-bold">Início</span>
-            </button>
-            
-            <button onclick="showScreen('screen-fixed')" class="nav-btn flex flex-col items-center gap-1 text-slate-400 hover:text-indigo-600 transition-colors">
-                <i data-lucide="calendar-check" width="24"></i>
-                <span class="text-[10px] font-bold">Fixos</span>
-            </button>
-
-            <button onclick="showScreen('screen-history')" class="nav-btn flex flex-col items-center gap-1 text-slate-400 hover:text-indigo-600 transition-colors">
-                <i data-lucide="pie-chart" width="24"></i>
-                <span class="text-[10px] font-bold">Relatório</span>
-            </button>
-        </nav>
-    </div>
-
-    <!-- SCRIPT DA APLICAÇÃO -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, updateDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // --- SUAS CHAVES AQUI ---
-        const myFirebaseConfig = {
-            apiKey: "AIzaSyD4UMogHL-SsBCb06id8eSNegmMRVp8JEs",
-            authDomain: "minhasfinancas-7c8e0.firebaseapp.com",
-            projectId: "minhasfinancas-7c8e0",
-            storageBucket: "minhasfinancas-7c8e0.firebasestorage.app",
-            messagingSenderId: "833243535294",
-            appId: "1:833243535294:web:5ebe5609c461144a268bef"
+        const COLORS = {
+            primary: '#10b981', 
+            expense: '#ef4444', 
+            income: '#10b981', 
         };
 
-        const app = initializeApp(myFirebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        
-        // ID do app para salvar dados no local correto
-        const appId = "1:833243535294:web:5ebe5609c461144a268bef"; 
+        const formatCurrency = (value) => {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+        };
 
-        let currentUser = null;
-        let transactions = [];
-        let fixedCosts = [];
+        const formatDate = (dateString) => {
+            if (!dateString) return '';
+            const date = new Date(dateString + 'T00:00:00'); 
+            return new Intl.DateTimeFormat('pt-BR').format(date);
+        };
 
-        // --- AUTH & INIT ---
-        signInAnonymously(auth).catch(console.error);
+        // --- DADOS INICIAIS ---
+        const INITIAL_TRANSACTIONS = [];
+        const INITIAL_FIXED_BILLS = [];
+        const INITIAL_CATEGORIES = ['Alimentação', 'Moradia', 'Transporte', 'Saúde', 'Lazer', 'Educação', 'Salário', 'Investimento', 'Contas Fixas', 'Extra'];
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                startApp();
-            }
-        });
+        // --- COMPONENTES ---
 
-        // --- LOGIC: DATA ---
-        function startApp() {
-            // Ouvir Transações (Ganhos, Gastos, Reserva)
-            const qTrans = query(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions'));
-            onSnapshot(qTrans, (snap) => {
-                transactions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
-                updateDashboard();
-                updateHistory();
-            });
-
-            // Ouvir Gastos Fixos
-            const qFixed = query(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'fixed_costs'));
-            onSnapshot(qFixed, (snap) => {
-                fixedCosts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                updateFixedScreen();
-                updateDashboard(); // Para atualizar alertas
-            });
-
-            document.getElementById('loader').classList.add('opacity-0');
-            setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
-        }
-
-        // --- HELPERS ---
-        function getWeekId(dateString) {
-            const d = new Date(dateString + 'T00:00:00');
-            const day = d.getDay();
-            const diff = d.getDate() - day;
-            const start = new Date(d.setDate(diff));
-            return start.toISOString().split('T')[0];
-        }
-
-        function formatMoney(val) {
-            return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        }
-
-        function formatDate(dateString) {
-            const [y, m, d] = dateString.split('-');
-            return `${d}/${m}`;
-        }
-
-        // --- DASHBOARD ---
-        function updateDashboard() {
-            const todayStr = new Date().toISOString().split('T')[0];
-            const currentWeekId = getWeekId(todayStr);
-
-            // Filtrar transações relevantes
-            const weeklyTrans = transactions.filter(t => getWeekId(t.date) === currentWeekId);
-            const reserveTrans = transactions.filter(t => t.type === 'reserve' || t.type === 'reserve_out');
-
-            // Calcular Saldo Semanal (Exclui movimentações da reserva para o saldo disponível)
-            const income = weeklyTrans.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
-            const expense = weeklyTrans.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
+        const Card = ({ title, value, icon: Icon, type = 'neutral', subtitle }) => {
+            const colorClass = type === 'income' ? 'text-emerald-500' : type === 'expense' ? 'text-red-500' : 'text-emerald-400';
             
-            // "Guardar" é uma saída do saldo disponível
-            const savedThisWeek = weeklyTrans.filter(t => t.type === 'reserve').reduce((acc, t) => acc + t.amount, 0);
-            // "Sacar Reserva" é uma entrada no saldo disponível
-            const withdrawnThisWeek = weeklyTrans.filter(t => t.type === 'reserve_out').reduce((acc, t) => acc + t.amount, 0);
+            return (
+                <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-lg hover:border-emerald-500/30 transition-all duration-300">
+                <div className="flex justify-between items-start mb-4">
+                    <div>
+                    <p className="text-zinc-400 text-sm font-medium">{title}</p>
+                    <h3 className={`text-2xl font-bold mt-1 ${colorClass}`}>{value}</h3>
+                    </div>
+                    <div className={`p-3 rounded-xl bg-zinc-800 ${colorClass} bg-opacity-10`}>
+                    <Icon size={24} />
+                    </div>
+                </div>
+                {subtitle && <p className="text-xs text-zinc-500">{subtitle}</p>}
+                </div>
+            );
+        };
 
-            const availableBalance = (income + withdrawnThisWeek) - (expense + savedThisWeek);
+        const Modal = ({ isOpen, onClose, title, children }) => {
+            if (!isOpen) return null;
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                <div className="bg-zinc-900 border border-zinc-800 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                    <div className="flex justify-between items-center p-4 border-b border-zinc-800 bg-zinc-950">
+                    <h3 className="text-lg font-semibold text-emerald-500">{title}</h3>
+                    <button onClick={onClose} className="text-zinc-400 hover:text-white transition-colors">
+                        <X size={20} />
+                    </button>
+                    </div>
+                    <div className="p-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                    {children}
+                    </div>
+                </div>
+                </div>
+            );
+        };
 
-            // Calcular Total da Reserva (Global)
-            const totalSaved = transactions.filter(t => t.type === 'reserve').reduce((acc, t) => acc + t.amount, 0);
-            const totalWithdrawn = transactions.filter(t => t.type === 'reserve_out').reduce((acc, t) => acc + t.amount, 0);
-            const reserveBalance = totalSaved - totalWithdrawn;
+        // --- APLICAÇÃO PRINCIPAL ---
 
-            // Renderizar Valores
-            document.getElementById('display-balance').textContent = formatMoney(availableBalance);
-            document.getElementById('display-balance').className = `text-4xl font-extrabold mt-2 tracking-tight ${availableBalance < 0 ? 'text-red-500' : 'text-slate-800'}`;
+        function FinanceAppFinal() {
+            // State Principal
+            const [activeTab, setActiveTab] = useState('dashboard');
             
-            document.getElementById('display-income').textContent = formatMoney(income);
-            document.getElementById('display-expense').textContent = formatMoney(expense);
-            document.getElementById('display-reserve').textContent = formatMoney(reserveBalance);
+            // Dados persistentes (usando chave 'v3' para esta versão final)
+            const [initialBalance, setInitialBalance] = useState(() => parseFloat(localStorage.getItem('initialBalance_v3')) || 0);
+            const [transactions, setTransactions] = useState(() => JSON.parse(localStorage.getItem('transactions_v3')) || INITIAL_TRANSACTIONS);
+            const [fixedBills, setFixedBills] = useState(() => JSON.parse(localStorage.getItem('fixedBills_v3')) || INITIAL_FIXED_BILLS);
+            const [categories, setCategories] = useState(() => JSON.parse(localStorage.getItem('categories_v3')) || INITIAL_CATEGORIES);
+            
+            // Modals States
+            const [isTxModalOpen, setIsTxModalOpen] = useState(false);
+            const [isFixedModalOpen, setIsFixedModalOpen] = useState(false);
+            const [editingTx, setEditingTx] = useState(null);
+            const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+            const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-            // Renderizar Lista Semanal
-            const listEl = document.getElementById('transaction-list');
-            listEl.innerHTML = '';
+            // Forms States
+            const [txForm, setTxForm] = useState({ description: '', value: '', type: 'expense', category: 'Alimentação', date: new Date().toISOString().split('T')[0], method: 'Cartão Crédito' });
+            const [fixedForm, setFixedForm] = useState({ name: '', value: '', dueDay: '', category: 'Contas Fixas' });
+            const [newCategory, setNewCategory] = useState('');
+            
+            // Referência para input de arquivo
+            const fileInputRef = useRef(null);
 
-            if (weeklyTrans.length === 0) {
-                listEl.innerHTML = `
-                    <div class="text-center py-8 opacity-50 bg-slate-50 rounded-2xl border border-slate-100 border-dashed">
-                        <i data-lucide="coffee" class="mx-auto mb-2 text-slate-300" width="32"></i>
-                        <p class="text-xs text-slate-500">Semana tranquila, nada por aqui.</p>
-                    </div>`;
-            } else {
-                weeklyTrans.forEach(t => {
-                    let icon = 'dollar-sign';
-                    let colorClass = 'bg-slate-100 text-slate-600';
-                    let sign = '';
-                    let valueColor = 'text-slate-800';
+            // --- PERSISTÊNCIA AUTOMÁTICA ---
+            useEffect(() => {
+                localStorage.setItem('transactions_v3', JSON.stringify(transactions));
+                localStorage.setItem('fixedBills_v3', JSON.stringify(fixedBills));
+                localStorage.setItem('categories_v3', JSON.stringify(categories));
+                localStorage.setItem('initialBalance_v3', initialBalance);
+            }, [transactions, fixedBills, categories, initialBalance]);
 
-                    if (t.type === 'income') {
-                        icon = 'trending-up'; colorClass = 'bg-emerald-100 text-emerald-600';
-                        sign = '+'; valueColor = 'text-emerald-600';
-                    } else if (t.type === 'expense') {
-                        icon = 'shopping-bag'; colorClass = 'bg-red-100 text-red-500';
-                        sign = '-'; valueColor = 'text-red-500';
-                    } else if (t.type === 'reserve') {
-                        icon = 'piggy-bank'; colorClass = 'bg-indigo-100 text-indigo-600';
-                        sign = '-'; valueColor = 'text-indigo-600';
-                    }
-
-                    const item = document.createElement('div');
-                    item.className = "flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-100";
-                    item.innerHTML = `
-                        <div class="flex items-center gap-3">
-                            <div class="p-2.5 rounded-xl ${colorClass}">
-                                <i data-lucide="${icon}" width="18"></i>
-                            </div>
-                            <div>
-                                <p class="font-bold text-slate-800 text-sm leading-tight">${t.description}</p>
-                                <p class="text-[10px] text-slate-400 font-medium uppercase mt-0.5">${formatDate(t.date)} • ${t.category}</p>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <span class="font-bold ${valueColor}">${sign}${formatMoney(t.amount)}</span>
-                            <button onclick="deleteItem('${t.id}')" class="block ml-auto text-[10px] text-slate-300 hover:text-red-500 mt-1">Excluir</button>
-                        </div>
-                    `;
-                    listEl.appendChild(item);
-                });
-            }
-
-            // Verificar Contas Fixas Pendentes do Mês
+            // Cálculos
+            const totalIncome = transactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + Number(curr.value), 0);
+            const totalExpense = transactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + Number(curr.value), 0);
+            const currentBalance = initialBalance + totalIncome - totalExpense;
             const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
-            // Verifica se existe uma transação para este fixo neste mês
-            const pendingFixed = fixedCosts.filter(fc => {
-                const paidThisMonth = transactions.some(t => 
-                    t.fixedCostId === fc.id && t.date.startsWith(currentMonth)
-                );
-                return !paidThisMonth;
-            });
 
-            const alertContainer = document.getElementById('fixed-alert-container');
-            if (pendingFixed.length > 0) {
-                alertContainer.classList.remove('hidden');
-                alertContainer.querySelector('p.text-xs').textContent = `${pendingFixed.length} contas para pagar este mês`;
-            } else {
-                alertContainer.classList.add('hidden');
-            }
-
-            lucide.createIcons();
-        }
-
-        // --- GASTOS FIXOS ---
-        function updateFixedScreen() {
-            const listEl = document.getElementById('fixed-list');
-            listEl.innerHTML = '';
+            // --- FUNÇÕES DE BACKUP (EXPORTAR/IMPORTAR) ---
             
-            const currentMonth = new Date().toISOString().slice(0, 7);
-
-            if (fixedCosts.length === 0) {
-                listEl.innerHTML = '<p class="text-center text-slate-400 text-sm mt-4">Nenhuma conta fixa cadastrada.</p>';
-            }
-
-            fixedCosts.forEach(fc => {
-                // Checar se foi pago este mês
-                const paidTrans = transactions.find(t => t.fixedCostId === fc.id && t.date.startsWith(currentMonth));
-                const isPaid = !!paidTrans;
-
-                const card = document.createElement('div');
-                card.className = `p-4 rounded-xl border flex justify-between items-center ${isPaid ? 'bg-emerald-50 border-emerald-100 opacity-60' : 'bg-white border-slate-200 shadow-sm'}`;
+            const handleExportData = () => {
+                const data = {
+                initialBalance,
+                transactions,
+                fixedBills,
+                categories,
+                version: 'v3',
+                exportDate: new Date().toISOString()
+                };
                 
-                card.innerHTML = `
-                    <div>
-                        <p class="font-bold text-slate-800">${fc.name}</p>
-                        <p class="text-xs text-slate-500 font-medium">Valor Base: ${formatMoney(fc.amount)}</p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        ${isPaid 
-                            ? `<span class="text-xs font-bold text-emerald-600 bg-emerald-100 px-2 py-1 rounded-md">PAGO</span>`
-                            : `<button onclick="payFixed('${fc.id}', '${fc.name}', ${fc.amount})" class="bg-indigo-600 text-white text-xs font-bold px-3 py-2 rounded-lg hover:bg-indigo-700 shadow-md transition-transform active:scale-95">Pagar Agora</button>`
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `backup_financas_${new Date().toISOString().slice(0,10)}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            const handleImportData = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (data.transactions && Array.isArray(data.transactions)) {
+                        if(window.confirm('Isso irá substituir todos os dados atuais pelos do arquivo. Deseja continuar?')) {
+                            setInitialBalance(data.initialBalance || 0);
+                            setTransactions(data.transactions || []);
+                            setFixedBills(data.fixedBills || []);
+                            setCategories(data.categories || INITIAL_CATEGORIES);
+                            alert('Dados importados com sucesso!');
+                            setIsConfigModalOpen(false);
                         }
-                        <button onclick="deleteFixed('${fc.id}')" class="p-2 text-slate-300 hover:text-red-500"><i data-lucide="trash-2" width="16"></i></button>
-                    </div>
-                `;
-                listEl.appendChild(card);
-            });
-            lucide.createIcons();
-        }
+                    } else {
+                        alert('Arquivo inválido ou corrompido.');
+                    }
+                } catch (error) {
+                    alert('Erro ao ler o arquivo. Certifique-se que é um JSON válido.');
+                }
+                };
+                reader.readAsText(file);
+                event.target.value = null;
+            };
 
-        window.payFixed = async (id, name, amount) => {
-            const today = new Date().toISOString().split('T')[0];
-            if(confirm(`Confirmar pagamento de ${name}? Isso criará um gasto de ${formatMoney(amount)} hoje.`)) {
-                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions'), {
-                    type: 'expense',
-                    amount: amount,
-                    description: `Fixo: ${name}`,
-                    category: 'Contas Fixas',
-                    date: today,
-                    fixedCostId: id, // Link para saber que foi pago
-                    createdAt: new Date().toISOString()
+            // --- LÓGICA DO APP ---
+
+            const handleAddTransaction = (e) => {
+                e.preventDefault();
+                if (!txForm.description || !txForm.value) return;
+
+                const newTx = {
+                id: editingTx ? editingTx.id : Date.now(),
+                ...txForm,
+                value: parseFloat(txForm.value)
+                };
+
+                if (editingTx) {
+                setTransactions(transactions.map(t => t.id === editingTx.id ? newTx : t));
+                } else {
+                setTransactions([newTx, ...transactions]);
+                }
+                closeTxModal();
+            };
+
+            const deleteTransaction = (id) => {
+                setTransactions(transactions.filter(t => t.id !== id));
+            };
+
+            const openTxModal = (tx = null) => {
+                if (tx) {
+                setEditingTx(tx);
+                setTxForm(tx);
+                } else {
+                setEditingTx(null);
+                setTxForm({ description: '', value: '', type: 'expense', category: categories[0], date: new Date().toISOString().split('T')[0], method: 'Cartão Crédito' });
+                }
+                setIsTxModalOpen(true);
+            };
+
+            const closeTxModal = () => {
+                setIsTxModalOpen(false);
+                setEditingTx(null);
+            };
+
+            const handleAddFixedBill = (e) => {
+                e.preventDefault();
+                if (!fixedForm.name || !fixedForm.value || !fixedForm.dueDay) return;
+
+                const newBill = {
+                id: Date.now(),
+                name: fixedForm.name,
+                value: parseFloat(fixedForm.value),
+                dueDay: fixedForm.dueDay,
+                category: fixedForm.category,
+                lastPaidMonth: null
+                };
+
+                setFixedBills([...fixedBills, newBill]);
+                setIsFixedModalOpen(false);
+                setFixedForm({ name: '', value: '', dueDay: '', category: 'Contas Fixas' });
+            };
+
+            const deleteFixedBill = (id) => {
+                setFixedBills(fixedBills.filter(b => b.id !== id));
+            };
+
+            const payFixedBill = (bill) => {
+                const today = new Date().toISOString().split('T')[0];
+                const newTx = {
+                id: Date.now(),
+                description: `Pgto. ${bill.name}`,
+                value: bill.value,
+                type: 'expense',
+                category: bill.category,
+                date: today,
+                method: 'Conta Fixa'
+                };
+                setTransactions(prev => [newTx, ...prev]);
+                setFixedBills(prev => prev.map(b => b.id === bill.id ? { ...b, lastPaidMonth: currentMonth } : b));
+            };
+
+            // --- VIEWS ---
+
+            const DashboardView = () => {
+                const dataByCategory = useMemo(() => {
+                const grouped = {};
+                transactions.filter(t => t.type === 'expense').forEach(t => {
+                    grouped[t.category] = (grouped[t.category] || 0) + t.value;
                 });
-                alert('Conta paga! Gasto registrado.');
-            }
-        }
+                return Object.keys(grouped).map(key => ({ name: key, value: grouped[key] }));
+                }, [transactions]);
 
-        window.deleteFixed = async (id) => {
-            if(confirm('Apagar esta conta fixa da lista? (Histórico antigo permanece)')) {
-                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'fixed_costs', id));
-            }
-        }
+                const dataEvolution = useMemo(() => {
+                    if (transactions.length === 0) return [];
+                    const sorted = [...transactions].sort((a,b) => new Date(a.date) - new Date(b.date));
+                    let runningBalance = initialBalance;
+                    return sorted.map(t => {
+                        if(t.type === 'income') runningBalance += t.value;
+                        else runningBalance -= t.value;
+                        return { date: t.date.slice(5), balance: runningBalance }; 
+                    });
+                }, [transactions, initialBalance]);
 
-        document.getElementById('fixed-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('fix-name').value;
-            const amount = parseFloat(document.getElementById('fix-val').value);
-            
-            await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'fixed_costs'), {
-                name, amount, createdAt: new Date().toISOString()
-            });
-            e.target.reset();
-        });
+                return (
+                <div className="space-y-6 animate-in fade-in duration-500">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card title="Saldo Atual" value={formatCurrency(currentBalance)} icon={Wallet} type={currentBalance >= 0 ? 'default' : 'expense'} subtitle="Disponível para uso" />
+                    <Card title="Entradas (Total)" value={formatCurrency(totalIncome)} icon={ArrowUpCircle} type="income" subtitle="Acumulado" />
+                    <Card title="Saídas (Total)" value={formatCurrency(totalExpense)} icon={ArrowDownCircle} type="expense" subtitle="Acumulado" />
+                    </div>
 
-        // --- RELATÓRIO COMPLETO ---
-        function updateHistory() {
-            const listEl = document.getElementById('history-list');
-            listEl.innerHTML = '';
-            
-            // Agrupar semanas
-            const weeks = {};
-            transactions.forEach(t => {
-                const wId = getWeekId(t.date);
-                if (!weeks[wId]) weeks[wId] = { id: wId, transactions: [], totalIncome: 0, totalExpense: 0 };
-                
-                weeks[wId].transactions.push(t);
-                
-                if (t.type === 'income') weeks[wId].totalIncome += t.amount;
-                if (t.type === 'expense') weeks[wId].totalExpense += t.amount;
-                // Ignorar reserva para "Saldo da Semana" no histórico para simplificar, ou contar como gasto se preferir
-            });
-
-            const sortedWeeks = Object.values(weeks).sort((a, b) => b.id.localeCompare(a.id));
-
-            sortedWeeks.forEach(w => {
-                const startObj = new Date(w.id + 'T00:00:00'); // ID é o domingo
-                const endObj = new Date(startObj); endObj.setDate(endObj.getDate() + 6);
-                
-                const balance = w.totalIncome - w.totalExpense;
-                const weekLabel = `${formatDate(w.id)} até ${formatDate(endObj.toISOString().split('T')[0])}`;
-
-                // Construir HTML da Lista Detalhada
-                let itemsHtml = w.transactions.map(t => {
-                    const color = t.type === 'income' ? 'text-emerald-600' : (t.type === 'reserve' ? 'text-indigo-600' : 'text-red-500');
-                    const sign = t.type === 'income' ? '+' : '-';
-                    return `
-                        <div class="flex justify-between py-2 border-b border-slate-50 last:border-0">
-                            <div>
-                                <p class="text-xs font-bold text-slate-700">${t.description}</p>
-                                <p class="text-[10px] text-slate-400">${t.category} • ${formatDate(t.date)}</p>
-                            </div>
-                            <span class="text-xs font-bold ${color}">${sign}${formatMoney(t.amount)}</span>
+                    {transactions.length === 0 ? (
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-10 text-center flex flex-col items-center justify-center min-h-[400px]">
+                        <div className="p-4 rounded-full bg-zinc-800 mb-4 animate-pulse">
+                            <LayoutDashboard size={40} className="text-zinc-500" />
                         </div>
-                    `;
-                }).join('');
+                        <h3 className="text-xl font-bold text-white mb-2">Seu painel está vazio</h3>
+                        <p className="text-zinc-400 max-w-md mx-auto mb-6 text-center">
+                            O sistema salva automaticamente tudo o que você fizer.
+                            <br/>Adicione uma movimentação para começar.
+                        </p>
+                        <button onClick={() => openTxModal()} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg font-medium shadow-lg shadow-emerald-900/20 transition-all hover:scale-105">
+                            Adicionar Primeira Movimentação
+                        </button>
+                    </div>
+                    ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-lg min-h-[300px]">
+                        <h3 className="text-lg font-semibold text-emerald-500 mb-4">Gastos por Categoria</h3>
+                        <div className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie data={dataByCategory} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                                {dataByCategory.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={[COLORS.primary, COLORS.expense, '#eab308', '#3b82f6', '#a855f7'][index % 5]} />
+                                ))}
+                                </Pie>
+                                <Tooltip contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', color: '#fff' }} formatter={(val) => formatCurrency(val)} />
+                                <Legend />
+                            </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                        </div>
+                        <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-lg min-h-[300px]">
+                        <h3 className="text-lg font-semibold text-emerald-500 mb-4">Evolução do Saldo</h3>
+                        <div className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={dataEvolution}>
+                                <defs>
+                                <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                                <XAxis dataKey="date" stroke="#71717a" fontSize={12} />
+                                <YAxis stroke="#71717a" fontSize={12} />
+                                <Tooltip contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', color: '#fff' }} formatter={(value) => formatCurrency(value)} />
+                                <Area type="monotone" dataKey="balance" stroke="#10b981" fillOpacity={1} fill="url(#colorBalance)" />
+                            </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                        </div>
+                    </div>
+                    )}
+                </div>
+                );
+            };
 
-                const card = document.createElement('div');
-                card.className = "bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden";
-                card.innerHTML = `
-                    <div onclick="toggleDetails(this)" class="p-4 cursor-pointer hover:bg-slate-50 transition-colors">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-xs font-bold text-indigo-500 bg-indigo-50 px-2 py-1 rounded-md uppercase tracking-wide">Semana ${weekLabel}</span>
-                            <i data-lucide="chevron-down" width="16" class="text-slate-400 transition-transform duration-300 arrow-icon"></i>
-                        </div>
-                        <div class="flex justify-between items-end">
-                            <div>
-                                <span class="text-[10px] text-slate-400 block mb-0.5">Saldo da Semana</span>
-                                <span class="font-bold text-lg ${balance >= 0 ? 'text-emerald-600' : 'text-red-500'}">${formatMoney(balance)}</span>
-                            </div>
-                            <div class="text-right">
-                                <span class="text-[10px] text-slate-400">Gasto: ${formatMoney(w.totalExpense)}</span>
-                            </div>
-                        </div>
+            const FixedBillsView = () => {
+                return (
+                <div className="space-y-6">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-2xl font-bold text-emerald-500">Contas Fixas</h2>
+                        <button onClick={() => setIsFixedModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-emerald-900/20">
+                            <Plus size={18} /> Cadastrar Conta
+                        </button>
                     </div>
                     
-                    <!-- Detalhes Expansíveis -->
-                    <div class="details-content bg-slate-50 px-4">
-                        <div class="py-3">
-                            <h5 class="text-[10px] font-bold text-slate-400 uppercase mb-2">Extrato Detalhado</h5>
-                            ${itemsHtml}
+                    {fixedBills.length === 0 ? (
+                        <div className="text-center py-20 bg-zinc-900 border border-zinc-800 rounded-2xl border-dashed">
+                            <p className="text-zinc-500">Nenhuma conta fixa cadastrada.</p>
+                            <button onClick={() => setIsFixedModalOpen(true)} className="text-emerald-500 hover:underline mt-2">Cadastrar agora</button>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {fixedBills.map(bill => {
+                            const isPaid = bill.lastPaidMonth === currentMonth;
+                            return (
+                            <div key={bill.id} className={`bg-zinc-900 border ${isPaid ? 'border-emerald-500/50' : 'border-zinc-800'} p-6 rounded-2xl shadow-lg relative overflow-hidden transition-all hover:scale-[1.01]`}>
+                                {isPaid && (
+                                <div className="absolute top-0 right-0 bg-emerald-500 text-black text-xs font-bold px-3 py-1 rounded-bl-xl z-10">PAGO</div>
+                                )}
+                                <div className="flex justify-between items-start mb-4">
+                                <div className="p-3 bg-zinc-800 rounded-xl"><Calendar size={24} className="text-emerald-400" /></div>
+                                <button className="text-zinc-600 hover:text-red-400 transition-colors" onClick={() => deleteFixedBill(bill.id)}><Trash2 size={16} /></button>
+                                </div>
+                                <h3 className="text-xl font-bold text-white mb-1">{bill.name}</h3>
+                                <p className="text-zinc-400 text-sm mb-4">Vence todo dia <span className="text-white font-bold">{bill.dueDay}</span></p>
+                                <div className="flex justify-between items-center mt-4 pt-4 border-t border-zinc-800">
+                                <span className="text-2xl font-semibold text-emerald-500">{formatCurrency(bill.value)}</span>
+                                {!isPaid ? (
+                                    <button onClick={() => payFixedBill(bill)} className="bg-zinc-100 hover:bg-white text-black px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-lg shadow-white/10">Pagar</button>
+                                ) : (
+                                    <span className="text-emerald-500 flex items-center gap-1 text-sm font-medium"><CheckCircle size={16} /> Pago</span>
+                                )}
+                                </div>
+                            </div>
+                            );
+                        })}
+                        </div>
+                    )}
+                </div>
+                );
+            };
+
+            const TransactionsView = () => {
+                return (
+                <div className="space-y-6">
+                    <div className="flex justify-between items-center">
+                    <h2 className="text-2xl font-bold text-emerald-500">Movimentações</h2>
+                    <button onClick={() => openTxModal()} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                        <Plus size={18} /> Nova
+                    </button>
+                    </div>
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-lg">
+                        <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                        <thead className="bg-zinc-950 border-b border-zinc-800">
+                            <tr>
+                            <th className="p-4 text-zinc-400 text-sm">Descrição</th>
+                            <th className="p-4 text-zinc-400 text-sm">Cat.</th>
+                            <th className="p-4 text-zinc-400 text-sm">Data</th>
+                            <th className="p-4 text-zinc-400 text-sm">Valor</th>
+                            <th className="p-4 text-right"></th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-800">
+                            {transactions.sort((a,b) => new Date(b.date) - new Date(a.date)).map(tx => (
+                            <tr key={tx.id} className="hover:bg-zinc-800/30">
+                                <td className="p-4 font-medium text-zinc-200">{tx.description}</td>
+                                <td className="p-4 text-zinc-400 text-sm"><span className="px-2 py-1 bg-zinc-800 rounded text-xs">{tx.category}</span></td>
+                                <td className="p-4 text-zinc-400 text-sm">{formatDate(tx.date)}</td>
+                                <td className={`p-4 font-semibold ${tx.type === 'income' ? 'text-emerald-500' : 'text-red-500'}`}>
+                                {tx.type === 'income' ? '+' : '-'} {formatCurrency(tx.value)}
+                                </td>
+                                <td className="p-4 text-right">
+                                    <button onClick={() => deleteTransaction(tx.id)} className="text-zinc-600 hover:text-red-500"><Trash2 size={16}/></button>
+                                </td>
+                            </tr>
+                            ))}
+                            {transactions.length === 0 && <tr><td colSpan="5" className="p-8 text-center text-zinc-500">Nenhuma movimentação.</td></tr>}
+                        </tbody>
+                        </table>
                         </div>
                     </div>
-                `;
-                listEl.appendChild(card);
-            });
-            lucide.createIcons();
+                </div>
+                );
+            };
+
+            const ReportsView = () => {
+                const expenses = transactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.value, 0);
+                const incomes = transactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.value, 0);
+                return (
+                    <div className="max-w-2xl mx-auto space-y-6">
+                        <h2 className="text-2xl font-bold text-emerald-500">Relatório Geral</h2>
+                        <div className="bg-zinc-100 text-zinc-900 rounded-xl overflow-hidden shadow-xl">
+                            <div className="p-8 bg-emerald-600 text-white">
+                                <h3 className="text-2xl font-bold">Resumo Financeiro</h3>
+                                <p className="opacity-80">Panorama geral das suas contas</p>
+                            </div>
+                            <div className="p-8 grid grid-cols-2 gap-8">
+                                <div>
+                                    <p className="text-xs uppercase font-bold text-zinc-500 mb-1">Total Entradas</p>
+                                    <p className="text-2xl font-bold text-emerald-600">{formatCurrency(incomes)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs uppercase font-bold text-zinc-500 mb-1">Total Saídas</p>
+                                    <p className="text-2xl font-bold text-red-600">{formatCurrency(expenses)}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            // --- NAVEGAÇÃO ---
+
+            const NavItem = ({ id, icon: Icon, label }) => (
+                <button
+                onClick={() => { setActiveTab(id); setIsMobileMenuOpen(false); }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                    activeTab === id ? 'bg-emerald-500 text-black font-semibold' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                }`}
+                >
+                <Icon size={20} />
+                <span>{label}</span>
+                </button>
+            );
+
+            return (
+                <div className="flex min-h-screen bg-zinc-950 text-zinc-100 font-sans">
+                {/* Sidebar */}
+                <aside className="hidden lg:flex w-72 flex-col p-6 border-r border-zinc-900 sticky top-0 h-screen">
+                    <div className="flex items-center gap-3 mb-10 px-2">
+                    <div className="bg-emerald-500 p-2 rounded-lg"><DollarSign size={24} className="text-black" /></div>
+                    <h1 className="text-xl font-bold">Finanças<span className="text-emerald-500">Pro</span></h1>
+                    </div>
+                    <nav className="space-y-2 flex-1">
+                    <NavItem id="dashboard" icon={LayoutDashboard} label="Dashboard" />
+                    <NavItem id="transactions" icon={FileText} label="Movimentações" />
+                    <NavItem id="fixed" icon={Calendar} label="Contas Fixas" />
+                    <NavItem id="reports" icon={TrendingUp} label="Relatórios" />
+                    </nav>
+                    <button onClick={() => setIsConfigModalOpen(true)} className="flex items-center gap-3 px-4 py-3 text-zinc-500 hover:text-emerald-500 mt-auto">
+                        <Settings size={20} /> <span>Configurações</span>
+                    </button>
+                </aside>
+
+                {/* Mobile Header */}
+                <div className="lg:hidden fixed top-0 w-full bg-zinc-950/90 backdrop-blur-md border-b border-zinc-900 z-40 px-4 py-3 flex justify-between items-center">
+                    <div className="flex items-center gap-2 font-bold"><DollarSign className="text-emerald-500"/> FinançasPro</div>
+                    <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-white">{isMobileMenuOpen ? <X /> : <Menu />}</button>
+                </div>
+
+                {isMobileMenuOpen && (
+                    <div className="fixed inset-0 bg-zinc-950 z-30 pt-20 px-6 lg:hidden">
+                        <nav className="space-y-4">
+                            <NavItem id="dashboard" icon={LayoutDashboard} label="Dashboard" />
+                            <NavItem id="transactions" icon={FileText} label="Movimentações" />
+                            <NavItem id="fixed" icon={Calendar} label="Contas Fixas" />
+                            <NavItem id="reports" icon={TrendingUp} label="Relatórios" />
+                            <button onClick={() => { setIsConfigModalOpen(true); setIsMobileMenuOpen(false); }} className="flex items-center gap-3 px-4 py-3 text-zinc-500 w-full">
+                                <Settings size={20} /> <span>Configurações</span>
+                            </button>
+                        </nav>
+                    </div>
+                )}
+
+                {/* Main Content */}
+                <main className="flex-1 p-4 lg:p-10 mt-14 lg:mt-0 overflow-x-hidden">
+                    {activeTab === 'dashboard' && <DashboardView />}
+                    {activeTab === 'transactions' && <TransactionsView />}
+                    {activeTab === 'fixed' && <FixedBillsView />}
+                    {activeTab === 'reports' && <ReportsView />}
+                </main>
+
+                {/* --- MODAIS --- */}
+
+                <Modal isOpen={isTxModalOpen} onClose={closeTxModal} title={editingTx ? "Editar Movimentação" : "Nova Movimentação"}>
+                    <form onSubmit={handleAddTransaction} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-2">
+                        <button type="button" onClick={() => setTxForm({...txForm, type: 'income'})} className={`p-2 rounded-lg border text-sm font-medium ${txForm.type === 'income' ? 'bg-emerald-500 text-black border-emerald-500' : 'bg-zinc-950 border-zinc-700 text-zinc-400'}`}>Entrada</button>
+                        <button type="button" onClick={() => setTxForm({...txForm, type: 'expense'})} className={`p-2 rounded-lg border text-sm font-medium ${txForm.type === 'expense' ? 'bg-red-500 text-white border-red-500' : 'bg-zinc-950 border-zinc-700 text-zinc-400'}`}>Saída</button>
+                    </div>
+                    <input type="number" step="0.01" required className="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white mt-1" placeholder="Valor" value={txForm.value} onChange={(e) => setTxForm({...txForm, value: e.target.value})} />
+                    <input type="text" required className="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white mt-1" placeholder="Descrição" value={txForm.description} onChange={(e) => setTxForm({...txForm, description: e.target.value})} />
+                    <div className="grid grid-cols-2 gap-4">
+                        <select className="bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white" value={txForm.category} onChange={(e) => setTxForm({...txForm, category: e.target.value})}>
+                            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        <input type="date" required className="bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white" value={txForm.date} onChange={(e) => setTxForm({...txForm, date: e.target.value})} />
+                    </div>
+                    <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg mt-4">Salvar</button>
+                    </form>
+                </Modal>
+
+                <Modal isOpen={isFixedModalOpen} onClose={() => setIsFixedModalOpen(false)} title="Nova Conta Fixa">
+                    <form onSubmit={handleAddFixedBill} className="space-y-4">
+                        <input type="text" required className="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white" placeholder="Nome (Ex: Aluguel)" value={fixedForm.name} onChange={(e) => setFixedForm({...fixedForm, name: e.target.value})} />
+                        <input type="number" step="0.01" required className="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white" placeholder="Valor" value={fixedForm.value} onChange={(e) => setFixedForm({...fixedForm, value: e.target.value})} />
+                        <input type="number" min="1" max="31" required className="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white" placeholder="Dia Vencimento" value={fixedForm.dueDay} onChange={(e) => setFixedForm({...fixedForm, dueDay: e.target.value})} />
+                        <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg mt-4">Cadastrar</button>
+                    </form>
+                </Modal>
+
+                <Modal isOpen={isConfigModalOpen} onClose={() => setIsConfigModalOpen(false)} title="Configurações">
+                    <div className="space-y-6">
+                        <div>
+                            <h4 className="text-white font-medium mb-1">Saldo Inicial</h4>
+                            <input type="number" value={initialBalance} onChange={(e) => setInitialBalance(parseFloat(e.target.value) || 0)} className="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white" />
+                        </div>
+                        <div>
+                            <h4 className="text-white font-medium mb-2">Gerenciar Categorias</h4>
+                            <div className="flex gap-2">
+                                <input type="text" placeholder="Nova categoria..." value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className="flex-1 bg-zinc-950 border border-zinc-700 rounded-lg p-2 text-white text-sm" />
+                                <button onClick={() => { if(newCategory){ setCategories([...categories, newCategory]); setNewCategory(''); }}} className="bg-emerald-600 px-3 rounded-lg text-white"><Plus size={18} /></button>
+                            </div>
+                        </div>
+                        
+                        <div className="pt-6 border-t border-zinc-800">
+                            <h4 className="text-white font-medium mb-3 flex items-center gap-2"><Save size={18}/> Backup e Segurança</h4>
+                            <p className="text-xs text-zinc-500 mb-4">Exporte seus dados para não perder se limpar o navegador.</p>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <button onClick={handleExportData} className="flex flex-col items-center justify-center p-4 bg-zinc-800 hover:bg-zinc-700 rounded-xl border border-zinc-700 transition-colors gap-2 text-emerald-500">
+                                    <Download size={24} />
+                                    <span className="text-sm font-bold">Baixar Dados</span>
+                                </button>
+                                
+                                <button onClick={() => fileInputRef.current.click()} className="flex flex-col items-center justify-center p-4 bg-zinc-800 hover:bg-zinc-700 rounded-xl border border-zinc-700 transition-colors gap-2 text-blue-400">
+                                    <Upload size={24} />
+                                    <span className="text-sm font-bold">Restaurar</span>
+                                    <input type="file" ref={fileInputRef} onChange={handleImportData} accept=".json" className="hidden" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </Modal>
+                </div>
+            );
         }
 
-        window.toggleDetails = (headerEl) => {
-            const content = headerEl.nextElementSibling;
-            const arrow = headerEl.querySelector('.arrow-icon');
-            
-            if (content.style.maxHeight) {
-                content.style.maxHeight = null;
-                arrow.style.transform = 'rotate(0deg)';
-            } else {
-                content.style.maxHeight = content.scrollHeight + "px";
-                arrow.style.transform = 'rotate(180deg)';
-            }
-        };
-
-        // --- UI & FORMS ---
-        window.showScreen = (id) => {
-            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            
-            // Highlight nav buttons
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.replace('text-indigo-600', 'text-slate-400'));
-            if(id === 'screen-dashboard') document.querySelectorAll('.nav-btn')[0].classList.replace('text-slate-400', 'text-indigo-600');
-            if(id === 'screen-fixed') document.querySelectorAll('.nav-btn')[1].classList.replace('text-slate-400', 'text-indigo-600');
-            if(id === 'screen-history') document.querySelectorAll('.nav-btn')[2].classList.replace('text-slate-400', 'text-indigo-600');
-        };
-
-        window.openAddScreen = (type) => {
-            const form = document.getElementById('transaction-form');
-            form.reset();
-            document.getElementById('form-date').value = new Date().toISOString().split('T')[0];
-            document.getElementById('form-type').value = type;
-
-            const title = document.getElementById('form-title');
-            const btn = document.getElementById('btn-save');
-            const cat = document.getElementById('form-cat');
-            const color = type === 'income' ? 'emerald' : (type === 'reserve' ? 'indigo' : 'red');
-
-            title.textContent = type === 'income' ? 'Nova Entrada' : (type === 'reserve' ? 'Nova Reserva' : 'Novo Gasto');
-            title.className = `font-bold text-xl text-${color}-600`;
-            
-            // Correção da interpolação de classe no botão
-            btn.className = `w-full text-white font-bold py-4 rounded-xl shadow-xl hover:opacity-90 active:scale-95 transition-all text-lg flex justify-center items-center gap-2 bg-${color}-600`;
-            btn.innerHTML = `<span>Confirmar</span> <i data-lucide="check" width="20"></i>`;
-
-            cat.innerHTML = '<option value="Outros">Outros</option>';
-            const cats = type === 'income' 
-                ? ['Salário', 'Extra', 'Presente'] 
-                : (type === 'reserve' ? ['Cofrinho', 'Meta', 'Emergência'] : ['Alimentação', 'Transporte', 'Lazer', 'Casa', 'Contas']);
-            
-            cats.forEach(c => {
-                const opt = document.createElement('option'); opt.value = c; opt.innerText = c; cat.appendChild(opt);
-            });
-
-            window.showScreen('screen-add');
-            setTimeout(() => lucide.createIcons(), 50); // Recriar ícones após renderizar
-        };
-
-        window.deleteItem = async (id) => {
-            if(confirm('Apagar item?')) await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions', id));
-        };
-
-        document.getElementById('transaction-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const type = document.getElementById('form-type').value;
-            const amount = parseFloat(document.getElementById('form-amount').value);
-            const desc = document.getElementById('form-desc').value;
-            const category = document.getElementById('form-cat').value;
-            const date = document.getElementById('form-date').value;
-
-            await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions'), {
-                type, amount, description: desc, category, date, createdAt: new Date().toISOString()
-            });
-            window.showScreen('screen-dashboard');
-        });
+        // --- Renderização do App na DOM ---
+        const root = createRoot(document.getElementById('root'));
+        root.render(<FinanceAppFinal />);
     </script>
 </body>
 </html>
-
